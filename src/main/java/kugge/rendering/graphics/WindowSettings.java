@@ -1,5 +1,8 @@
 package kugge.rendering.graphics;
 
+/**
+ * Contains the basic settings for a window.
+ */
 public class WindowSettings {
 
     private int width;
