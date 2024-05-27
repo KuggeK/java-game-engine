@@ -39,6 +39,7 @@
         <configuration>
           <mainClass>kugge.rendering.RenderingEngine</mainClass>
           <arguments>
+            <argument>OPENGL</argument>
           </arguments>
         </configuration>
       </plugin>
