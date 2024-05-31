@@ -1,6 +1,6 @@
 package kugge.rendering.core.objects;
 
-import kugge.rendering.core.materials.Material;
+import kugge.rendering.core.objects.materials.Material;
 
 /**
  * Represents an instance of a mesh. Links to the mesh by ID. Defines a position, 
