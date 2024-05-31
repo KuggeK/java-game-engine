@@ -1,5 +1,7 @@
 package kugge.rendering.graphics;
 
+import kugge.rendering.core.objects.RenderScene;
+
 /**
  * Represents a real-time renderer that can render a scene with a given camera and objects.
  */
@@ -17,4 +19,16 @@ public interface Renderer {
      * @param force Whether to force the render or not.
      */
     public void render(boolean force);
+
+    /**
+     * Sets the scene to render.
+     * @param scene The scene to render.
+     */
+    public void setRenderScene(RenderScene scene);
+
+    /**
+     * Initializes the renderer with the given window.
+     * @param window The window to render to.
+     */
+    public void linkToWindow(Window window);
 }
