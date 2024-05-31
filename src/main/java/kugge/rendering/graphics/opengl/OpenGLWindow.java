@@ -24,6 +24,7 @@ public class OpenGLWindow extends JFrame implements Window {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         canvas = new GLCanvas();
         add(canvas);
+        setVisible(true);
     }
 
     @Override
