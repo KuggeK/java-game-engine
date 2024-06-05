@@ -4,6 +4,8 @@ import com.jogamp.opengl.GL4;
 
 import static com.jogamp.opengl.GL4.*;
 
+import java.awt.Component;
+import java.awt.geom.AffineTransform;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -110,8 +112,6 @@ public class OpenGLBindings implements GLEventListener {
 
         // Render all meshes
         for (MeshData mesh : meshData) {
-            System.out.println("Rendering mesh " + mesh.id + "...");
-
             List<Instance> instances = meshInstances.get(mesh.id);
 
             // Skip if there are no instances of this mesh
@@ -164,7 +164,6 @@ public class OpenGLBindings implements GLEventListener {
 
         // Unbind VAO
         gl.glBindVertexArray(0);
-        System.out.println("GL error: " + gl.glGetError());
     }
 
     @Override
@@ -178,10 +177,20 @@ public class OpenGLBindings implements GLEventListener {
     @Override
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
         GL4 gl = drawable.getGL().getGL4();
-        gl.glViewport(0, 0, width, height);
+        int viewportWidth = drawable.getSurfaceWidth();
+        int viewportHeight = drawable.getSurfaceHeight();
 
-        // Update projection matrix
-        updateProjectionMatrix((float) width / (float) height);
+        // Scale the viewport to match the actual window size, if the window has been
+        // scaled. See issue #12.
+        if (drawable instanceof Component) {
+            Component comp = (Component) drawable;
+            AffineTransform at = comp.getGraphicsConfiguration().getDefaultTransform();
+            float sx = (float) at.getScaleX(), sy = (float) at.getScaleY();
+            viewportWidth = (int) (width * sx);
+            viewportHeight = (int) (height * sy);
+        }
+        gl.glViewport(0, 0, viewportWidth, viewportHeight);
+        updateProjectionMatrix((float) viewportWidth / viewportHeight);
     }
 
     public void updateProjectionMatrix(float aspectRatio) {
