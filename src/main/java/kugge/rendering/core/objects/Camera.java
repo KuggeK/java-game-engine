@@ -1,11 +1,11 @@
 package kugge.rendering.core.objects;
 
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 public class Camera {
     
-    private float[] position;
-    private float[] forward;
+    private Transform transform;
     private float fov;
     private float near;
     private float far;
@@ -18,13 +18,15 @@ public class Camera {
         this.fov = fov;
         this.near = near;
         this.far = far;
-        position = new float[] {0, 0, 7};
-        forward = new float[] {0, 0, -1};
+        transform = new Transform();
     }
 
     public Matrix4f getViewMatrix() {
-        // TODO Implement an actual view matrix, this is just a simple translation as a placeholder.
-        return new Matrix4f().translation(-position[0], -position[1], -position[2]);
+        return new Matrix4f().lookAt(
+            transform.getPosition(),
+            transform.getPosition().add(transform.getForward(), new Vector3f()),
+            transform.getUp()
+        );
     }
 
     public float getFov() {
@@ -49,5 +51,13 @@ public class Camera {
 
     public void setFar(float far) {
         this.far = far;
+    }
+
+    public Transform getTransform() {
+        return transform;
+    }
+
+    public void setTransform(Transform transform) {
+        this.transform = transform;
     }
 }

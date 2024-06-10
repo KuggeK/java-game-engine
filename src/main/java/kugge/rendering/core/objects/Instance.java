@@ -22,12 +22,14 @@ public class Instance {
      */
     private Material material;
 
+    private int textureIndex = -1;
+
     public Instance(int meshID, float[] position, float[] rotation, float[] scale, Material material) {
         this.meshID = meshID;
         this.transform = new Transform();
-        this.transform.setPosition(position);
-        this.transform.setRotation(rotation);
-        this.transform.setScale(scale);
+        this.transform.setPosition(position[0], position[1], position[2]);
+        this.transform.setRotation(rotation[0], rotation[1], rotation[2]);
+        this.transform.setScale(scale[0], scale[1], scale[2]);
         this.material = material;
     }
 
@@ -57,5 +59,13 @@ public class Instance {
 
     public void setMaterial(Material material) {
         this.material = material;
+    }
+
+    public int getTextureIndex() {
+        return textureIndex;
+    }
+
+    public void setTextureIndex(int textureIndex) {
+        this.textureIndex = textureIndex;
     }
 }

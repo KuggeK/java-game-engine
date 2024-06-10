@@ -1,62 +1,101 @@
 package kugge.rendering.core.objects;
 
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 public class Transform {
-    private float[] position;
-    private float[] rotation;
-    private float[] scale;
+    private Vector3f position;
+    private Quaternionf rotation;
+    private Vector3f scale;
 
-    private Matrix4f modelMatrix = new Matrix4f();
-    private boolean matrixChanged;
+    private Matrix4f modelMatrix;
+    private boolean modelMatrixChanged;
 
     public Transform() {
-        position = new float[3];
-        rotation = new float[3];
-        scale = new float[3];
-        matrixChanged = true;
+        position = new Vector3f();
+        rotation = new Quaternionf();
+        scale = new Vector3f();
+        modelMatrix = new Matrix4f();
+        modelMatrixChanged = true;
         getModelMatrix();
     }
 
     public void setPosition(float x, float y, float z) {
-        position[0] = x;
-        position[1] = y;
-        position[2] = z;
-        matrixChanged = true;
+        position.set(x, y, z);
+        modelMatrixChanged = true;
     }
 
     public void setRotation(float x, float y, float z) {
-        rotation[0] = x;
-        rotation[1] = y;
-        rotation[2] = z;
-        matrixChanged = true;
+        rotation.identity().rotateXYZ(x, y, z);
+        modelMatrixChanged = true;
     }
 
     public void setScale(float x, float y, float z) {
-        scale[0] = x;
-        scale[1] = y;
-        scale[2] = z;
-        matrixChanged = true;
+        scale.set(x, y, z);
+        modelMatrixChanged = true;
     }
 
-    public void setPosition(float[] position) {
-        setPosition(position[0], position[1], position[2]);
-    }
-    
-    public void setRotation(float[] rotation) {
-        setRotation(rotation[0], rotation[1], rotation[2]);
+    public void translate(float x, float y, float z) {
+        position.add(x, y, z);
+        modelMatrixChanged = true;
     }
 
-    public void setScale(float[] scale) {
-        setScale(scale[0], scale[1], scale[2]);
+    public void rotate(float x, float y, float z) {
+        rotation.rotateXYZ(x, y, z);
+        modelMatrixChanged = true;
+    }
+
+    public void scale(float x, float y, float z) {
+        scale.mul(x, y, z);
+        modelMatrixChanged = true;
+    }
+
+    public void translate(Vector3f translation) {
+        position.add(translation);
+        modelMatrixChanged = true;
+    }
+
+    public void rotate(Vector3f rotation) {
+        this.rotation.rotateXYZ(rotation.x, rotation.y, rotation.z);
+        modelMatrixChanged = true;
+    }
+
+    public void scale(Vector3f scale) {
+        this.scale.mul(scale);
+        modelMatrixChanged = true;
+    }
+
+    public Vector3f getForward() {
+        return new Vector3f(0, 0, -1).rotate(rotation);
+    }
+
+    public Vector3f getRight() {
+        return new Vector3f(1, 0, 0).rotate(rotation);
+    }
+
+    public Vector3f getUp() {
+        return new Vector3f(0, 1, 0).rotate(rotation);
     }
 
     public Matrix4f getModelMatrix() {
-        if (matrixChanged) {
-            // TODO Implement a proper model matrix calculation
-            modelMatrix.identity().translation(position[0], position[1], position[2]);
-            matrixChanged = false;
+        if (modelMatrixChanged) {
+            // Model matrix is calculated as translation * rotation * scale
+            modelMatrix.identity().translate(position).rotate(rotation).scale(scale);
+            modelMatrixChanged = false;
         }
         return modelMatrix;
+    }
+
+    public Vector3f getPosition() {
+        return position;
+    }
+
+    public Quaternionf getRotation() {
+        return rotation;
+    }
+
+    public Vector3f getScale() {
+        return scale;
     }
 }

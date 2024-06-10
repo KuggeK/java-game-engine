@@ -33,7 +33,9 @@ public class Cube extends Mesh {
             1, 0,
             1, 1
         };
+
         float[] normals = positions;
+
         int[] indices = new int[] {
             0, 1, 2,
             1, 3, 2,
