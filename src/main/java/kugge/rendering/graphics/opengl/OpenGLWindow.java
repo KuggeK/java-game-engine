@@ -1,7 +1,11 @@
 package kugge.rendering.graphics.opengl;
 
+import java.awt.event.KeyListener;
+import java.util.EventListener;
+
 import javax.swing.JFrame;
 
+import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
 
 import kugge.rendering.graphics.Window;
@@ -25,6 +29,7 @@ public class OpenGLWindow extends JFrame implements Window {
         canvas = new GLCanvas();
         add(canvas);
         setVisible(true);
+        canvas.requestFocus();
     }
 
     @Override
@@ -40,5 +45,16 @@ public class OpenGLWindow extends JFrame implements Window {
     private void updateSettings() {
         this.setSize(settings.getWidth(), settings.getHeight());
         this.setTitle(settings.getTitle());
+    }
+
+    @Override
+    public void registerEventListener(EventListener listener) {
+        if (listener instanceof GLEventListener) {
+            canvas.addGLEventListener((GLEventListener) listener);
+        } else if (listener instanceof KeyListener) {
+            canvas.addKeyListener((KeyListener) listener);
+        } else {
+            throw new IllegalArgumentException("Listener type not supported");
+        }
     }
 }
