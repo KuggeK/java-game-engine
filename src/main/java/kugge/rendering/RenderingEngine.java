@@ -15,6 +15,7 @@ import kugge.rendering.core.objects.Mesh;
 import kugge.rendering.core.objects.RenderScene;
 import kugge.rendering.core.objects.Sphere;
 import kugge.rendering.core.objects.Texture;
+import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.materials.Materials;
 import kugge.rendering.graphics.Renderer;
 import kugge.rendering.graphics.Window;
@@ -42,7 +43,7 @@ public class RenderingEngine {
     public void start(RendererType type) {
         List<Mesh> meshes = List.of(
             Sphere.withId(1),
-            Cube.withSize(2, 0.3f)
+            new Cube(2)
         );
         List<Instance> instances = new ArrayList<>();
 
@@ -68,22 +69,30 @@ public class RenderingEngine {
         }
 
         for (int i = -5; i < 5; i++) {
-            Instance instance1 = new Instance(1, new float[] {i, 0, -5}, new float[] {0, 0, 0}, new float[] {0.3f, 0.3f, 0.3f}, Materials.GOLD);
+            Instance instance1 = new Instance(1, new float[] {i, 0, -5}, new float[] {0, 0, 0}, new float[] {0.3f, 0.3f, 0.3f}, Materials.RED);
             instance1.setTextureIndex(0);
 
             // Set texture index to -1 to disable texture
             if (i == 1) {
                 instance1.setTextureIndex(-1);
+                instance1.setMaterial(Materials.EMERALD);
             }
 
             instances.add(instance1);
-            Instance instance2 = new Instance(2, new float[] {0, i, -5}, new float[] {0, 0, 0}, new float[] {1f, 1f, 0.5f}, Materials.BRONZE);
+            Instance instance2 = new Instance(2, new float[] {0, i, -5}, new float[] {0, 0, 0}, new float[] {0.3f, .3f, 0.3f}, Materials.BRONZE);
             instance2.setTextureIndex(0);
             instances.add(instance2);
         }
 
         camera = new Camera();
         scene = new RenderScene(camera, meshes, instances);
+
+        scene.setDirectionalLight(new DirectionalLight(
+            new float[] {0.1f, 0.1f, 0.1f, 1.0f}, // Ambient
+            new float[] {0.5f, 0.5f, 0.5f, 1.0f}, // Diffuse
+            new float[] {1.0f, 1.0f, 1.0f, 1.0f}, // Specular
+            new float[] {0.5f, -1.0f, -1.0f, 0.0f} // Direction
+            ));
 
         switch (type) {
             case OPENGL:

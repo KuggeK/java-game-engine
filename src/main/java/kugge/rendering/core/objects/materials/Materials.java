@@ -25,10 +25,24 @@ public class Materials {
         51.2f
     );
 
-        public static final Material BRONZE = new Material(
+    public static final Material BRONZE = new Material(
             new Vector4f(0.2125f, 0.1275f, 0.054f, 1.0f),
             new Vector4f(0.714f, 0.4284f, 0.18144f, 1.0f),
             new Vector4f(0.393548f, 0.271906f, 0.166721f, 1.0f),
         25.6f
+    );
+
+    public static final Material RED = new Material(
+        new Vector4f(0.5f, 0.0f, 0.0f, 1.0f),
+        new Vector4f(0.7f, 0.6f, 0.6f, 1.0f),
+        new Vector4f(0.7f, 0.6f, 0.6f, 1.0f),
+        32.0f
+    );
+
+    public static final Material EMERALD = new Material(
+        new Vector4f(0.0215f, 0.1745f, 0.0215f, 0.55f),
+        new Vector4f(0.07568f, 0.61424f, 0.07568f, 0.55f),
+        new Vector4f(0.633f, 0.727811f, 0.633f, 0.55f),
+        76.8f
     );
 }
