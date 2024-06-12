@@ -19,7 +19,7 @@ public class Mesh {
     private float[] textureCoords;
     private float[] normals;
 
-    // Indices of attributes. One index per vertex.
+    // Indices of attributes. The index matches the position, texture coordinate, and normal of the vertex.
     private int[] indices;
 
     private int numVertices;
@@ -40,31 +40,23 @@ public class Mesh {
      */
     private Map<Integer, Integer> textureParameters;
 
-    public Mesh(int id, float[] positions, float[] textureCoords, float[] normals, int[] indices) {
-        this.id = id;
-        this.positions = positions;
-        this.textureCoords = textureCoords;
-        this.normals = normals;
-        this.indices = indices;
-        numVertices = positions.length / 3;
-        numIndices = indices.length;
-        material = Materials.DEFAULT;
-        textures = new ArrayList<>();
-        textureParameters = Map.of();
-    }
+    public Mesh(int id, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, List<Texture> textures, Map<Integer, Integer> textureParameters) {
+        if (positions.length % 3 != 0) {
+            throw new IllegalArgumentException("Positions array must have a length that is a multiple of 3");
+        }
 
-    public Mesh(int id, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material) {
-        this.id = id;
-        this.positions = positions;
-        this.textureCoords = textureCoords;
-        this.normals = normals;
-        this.indices = indices;
-        this.material = material;
-        textures = new ArrayList<>();
-        textureParameters = Map.of();
-    }
+        if (normals.length != positions.length) {
+            throw new IllegalArgumentException("Normals array must have the same length as the positions array");
+        }
 
-    public Mesh(int id, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, List<Texture> textures) {
+        if (textureCoords.length % 2 != 0) {
+            throw new IllegalArgumentException("Texture coordinates array must have a length that is a multiple of 2");
+        }
+
+        if (textureCoords.length / 2 != positions.length / 3) {
+            throw new IllegalArgumentException("Texture coordinates must be defined for each vertex!");
+        }
+
         this.id = id;
         this.positions = positions;
         this.textureCoords = textureCoords;
@@ -72,7 +64,18 @@ public class Mesh {
         this.indices = indices;
         this.material = material;
         this.textures = textures;
-        textureParameters = Map.of();
+        this.textureParameters = textureParameters;
+
+        this.numVertices = positions.length / 3;
+        this.numIndices = indices.length;
+    }
+
+    public Mesh(int id, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material) {
+        this(id, positions, textureCoords, normals, indices, material, new ArrayList<>(), Map.of());
+    }
+
+    public Mesh(int id, float[] positions, float[] textureCoords, float[] normals, int[] indices) {
+        this(id, positions, textureCoords, normals, indices, Materials.DEFAULT);
     }
 
     public int getId() {
