@@ -3,6 +3,7 @@ package kugge.rendering.core.objects;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 public class Transform {
     private Vector3f position;
@@ -23,6 +24,16 @@ public class Transform {
 
     public void setPosition(float x, float y, float z) {
         position.set(x, y, z);
+        modelMatrixChanged = true;
+    }
+
+    public void setPosition(Vector3f position) {
+        this.position.set(position);
+        modelMatrixChanged = true;
+    }
+
+    public void setPosition(Vector4f position) {
+        this.position.set(position.x, position.y, position.z);
         modelMatrixChanged = true;
     }
 

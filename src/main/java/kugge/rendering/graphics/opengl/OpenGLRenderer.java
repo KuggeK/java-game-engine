@@ -46,6 +46,11 @@ public class OpenGLRenderer implements Renderer {
         // Set instance information
         bindings.setInstances(scene.getInstances());
 
+        // Set light information
+        bindings.setGlobalAmbient(scene.getAmbientLight());
+        bindings.setDirectionalLight(scene.getDirectionalLight());
+        bindings.setPositionalLights(scene.getPositionalLights());
+
         if (renderThread != null && renderThread.isAlive()) {
             renderThread.interrupt();
         }

@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -23,6 +24,8 @@ import com.jogamp.opengl.GLEventListener;
 import kugge.rendering.core.objects.Instance;
 import kugge.rendering.core.objects.Mesh;
 import kugge.rendering.core.objects.Texture;
+import kugge.rendering.core.objects.lights.DirectionalLight;
+import kugge.rendering.core.objects.lights.PositionalLight;
 import kugge.rendering.core.objects.materials.Material;
 import kugge.rendering.graphics.opengl.Shaders.Shader;
 public class OpenGLBindings implements GLEventListener {
@@ -37,16 +40,21 @@ public class OpenGLBindings implements GLEventListener {
     private FloatBuffer matrixVals = Buffers.newDirectFloatBuffer(16);
     private Matrix4f projectionMatrix;
     private Matrix4f viewMatrix;
+    private Matrix4f inverseViewMatrix;
+    private Vector3f viewPos;
 
     private int[] VAO;
     private int[] VBOs;
 
     // Number of VBOs per mesh and the corresponding offsets in the VBO array
-    private final int VBO_AMOUNT = 4;
+    private final int VBO_AMOUNT = 5;
     private final int VERTEX_DATA_VBO = 0;
     private final int INDEX_DATA_VBO = 1;
     private final int MODEL_MATRIX_VBO = 2;
     private final int TEXTURE_INDEX_VBO = 3;
+    private final int MATERIAL_VBO = 4;
+
+    private final int MAX_N_LIGHTS = 50;
 
     private int shaderProgram;
     private Shader[] shaders = new Shader[] {
@@ -56,9 +64,15 @@ public class OpenGLBindings implements GLEventListener {
                     "C:/Users/Kilian/Documents/Programming/Java/rendering-engine/src/main/resources/shaders/basic.frag")
     };
 
+    // Camera settings
     private float fov = 60f;
     private float near = 0.01f;
     private float far = 1000f;
+
+    // Lighting
+    private float globalAmbient = 0.1f;
+    private DirectionalLight directionalLight = new DirectionalLight();
+    private List<PositionalLight> posLights = new ArrayList<>();
 
     public OpenGLBindings(List<Mesh> meshes) {
         meshData = new ArrayList<>();
@@ -66,6 +80,8 @@ public class OpenGLBindings implements GLEventListener {
 
         projectionMatrix = new Matrix4f();
         viewMatrix = new Matrix4f();
+        inverseViewMatrix = new Matrix4f();
+        viewPos = new Vector3f();
         
         this.meshes = meshes;
     }
@@ -93,6 +109,9 @@ public class OpenGLBindings implements GLEventListener {
         // Configure depth test
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDepthFunc(GL_LESS);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glCullFace(GL_BACK);
+        gl.glFrontFace(GL_CCW);
 
         updateProjectionMatrix((float) drawable.getSurfaceWidth() / drawable.getSurfaceHeight());
     }
@@ -111,9 +130,55 @@ public class OpenGLBindings implements GLEventListener {
         int projectionMxLox = gl.glGetUniformLocation(shaderProgram, "projectionMx");
         int viewMxLoc = gl.glGetUniformLocation(shaderProgram, "viewMx");
 
-        // Set projection and view matrices
+        int viewPosLoc = gl.glGetUniformLocation(shaderProgram, "viewPos");
+        int globalAmbientLoc = gl.glGetUniformLocation(shaderProgram, "globalAmbient");
+
+        int dirLightAmbientLoc = gl.glGetUniformLocation(shaderProgram, "dirLight.ambient");
+        int dirLightDiffuseLoc = gl.glGetUniformLocation(shaderProgram, "dirLight.diffuse");
+        int dirLightSpecularLoc = gl.glGetUniformLocation(shaderProgram, "dirLight.specular");
+        int dirLightDirectionLoc = gl.glGetUniformLocation(shaderProgram, "dirLight.direction");
+
+        int nLightsLoc = gl.glGetUniformLocation(shaderProgram, "nLights");
+
+        // Set projection, view and normal matrices
         gl.glUniformMatrix4fv(projectionMxLox, 1, false, projectionMatrix.get(matrixVals));
         gl.glUniformMatrix4fv(viewMxLoc, 1, false, viewMatrix.get(matrixVals));
+
+        // Set view position uniform
+        inverseViewMatrix.set(viewMatrix).invert().getColumn(3, viewPos);
+        gl.glUniform3fv(viewPosLoc, 1, viewPos.get(matrixVals));
+
+        // Set global ambient uniform
+        gl.glUniform1f(globalAmbientLoc, globalAmbient);
+
+        // Set directional light uniforms
+        gl.glUniform4fv(dirLightAmbientLoc, 1, directionalLight.getAmbient().get(matrixVals));
+        gl.glUniform4fv(dirLightDiffuseLoc, 1, directionalLight.getDiffuse().get(matrixVals));
+        gl.glUniform4fv(dirLightSpecularLoc, 1, directionalLight.getSpecular().get(matrixVals));
+        gl.glUniform3fv(dirLightDirectionLoc, 1, directionalLight.getDirection().get(matrixVals));
+
+        // Set positional light uniforms
+        gl.glUniform1i(nLightsLoc, Math.min(MAX_N_LIGHTS, posLights.size()));
+        for (int i = 0; i < posLights.size(); ++i) {
+            PositionalLight light = posLights.get(i);
+            int ambientLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].ambient");
+            int diffuseLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].diffuse");
+            int specularLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].specular");
+            int positionLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].position");
+            int constantLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].attenuation.constant");
+            int linearLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].attenuation.linear");
+            int quadraticLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].attenuation.quadratic");
+            int radiusLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].attenuation.radius");
+            gl.glUniform4fv(ambientLoc, 1, light.getAmbient().get(matrixVals));
+            gl.glUniform4fv(diffuseLoc, 1, light.getDiffuse().get(matrixVals));
+            gl.glUniform4fv(specularLoc, 1, light.getSpecular().get(matrixVals));
+            gl.glUniform4fv(positionLoc, 1, light.getPosition().get(matrixVals));
+            gl.glUniform1f(constantLoc, light.getConstant());
+            gl.glUniform1f(linearLoc, light.getLinear());
+            gl.glUniform1f(quadraticLoc, light.getQuadratic());
+            gl.glUniform1f(radiusLoc, light.getRadius());
+        }
+
         matrixVals.clear();
 
         // Get attribute locations
@@ -124,15 +189,17 @@ public class OpenGLBindings implements GLEventListener {
 
         gl.glBindVertexArray(VAO[0]);
 
-        ;
+
         // Render all meshes
         for (MeshData mesh : meshData) {
             List<Instance> instances = meshInstances.get(mesh.id);
 
             // Skip if there are no instances of this mesh
             if (instances == null || instances.size() == 0) {
+                System.out.println("No instances of mesh " + mesh.id + " found");
                 continue;
             }
+            System.out.println("Rendering " + instances.size() + " instances of mesh " + mesh.id);
 
             int meshVBOIdx = mesh.VBOi;
 
@@ -151,13 +218,24 @@ public class OpenGLBindings implements GLEventListener {
             gl.glEnableVertexAttribArray(normalLoc);
             gl.glVertexAttribPointer(normalLoc, 3, GL_FLOAT, false, 0, mesh.numVertices * 5 * Float.BYTES);
 
-            // Get model matrices and texture indices for each instance
+            // Get model matrices, material data and texture indices for each instance
             FloatBuffer modelMxBuffer = Buffers.newDirectFloatBuffer(instances.size() * 16);
+            FloatBuffer materialBuffer = Buffers.newDirectFloatBuffer(13 * instances.size());
             int[] textureIndices = new int[instances.size()];
             for (int j = 0; j < instances.size(); ++j) {
                 Instance instance = instances.get(j);
                 // Put model matrix into buffer
                 instance.getTransform().getModelMatrix().get(j*16, modelMxBuffer);
+
+                // Get material data
+                Material material = instance.getMaterial();
+                if (material == null) {
+                    material = mesh.material;
+                }
+                material.ambient().get(j*13, materialBuffer);
+                material.diffuse().get(j*13 + 4, materialBuffer);
+                material.specular().get(j*13 + 8, materialBuffer);
+                materialBuffer.put(j*13 + 12, material.shininess());
 
                 // Get texture index
                 textureIndices[j] = instance.getTextureIndex();
@@ -173,6 +251,32 @@ public class OpenGLBindings implements GLEventListener {
                 gl.glEnableVertexAttribArray(modelMxLoc + j);
                 gl.glVertexAttribDivisor(modelMxLoc + j, 1);
             }
+
+            // Bind material buffer and send data to GPU
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MATERIAL_VBO]);
+            gl.glBufferData(GL_ARRAY_BUFFER, materialBuffer.limit() * Float.BYTES, materialBuffer, GL_STATIC_DRAW);
+
+            // Set material data to shader
+            int ambientLoc = gl.glGetAttribLocation(shaderProgram, "materialAmbient");
+            int diffuseLoc = gl.glGetAttribLocation(shaderProgram, "materialDiffuse");
+            int specularLoc = gl.glGetAttribLocation(shaderProgram, "materialSpecular");
+            int shininessLoc = gl.glGetAttribLocation(shaderProgram, "materialShininess");
+
+            gl.glVertexAttribPointer(ambientLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 0);
+            gl.glEnableVertexAttribArray(ambientLoc);
+            gl.glVertexAttribDivisor(ambientLoc, 1);
+
+            gl.glVertexAttribPointer(diffuseLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 4 * Float.BYTES);
+            gl.glEnableVertexAttribArray(diffuseLoc);
+            gl.glVertexAttribDivisor(diffuseLoc, 1);
+
+            gl.glVertexAttribPointer(specularLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 8 * Float.BYTES);
+            gl.glEnableVertexAttribArray(specularLoc);
+            gl.glVertexAttribDivisor(specularLoc, 1);
+
+            gl.glVertexAttribPointer(shininessLoc, 1, GL_FLOAT, false, 13 * Float.BYTES, 12 * Float.BYTES);
+            gl.glEnableVertexAttribArray(shininessLoc);
+            gl.glVertexAttribDivisor(shininessLoc, 1);
 
             // Bind texture index buffer and send data to GPU
             IntBuffer textureIndicesBuffer = Buffers.newDirectIntBuffer(textureIndices);
@@ -197,6 +301,10 @@ public class OpenGLBindings implements GLEventListener {
 
         // Unbind VAO
         gl.glBindVertexArray(0);
+        int error = gl.glGetError();
+        if (error != GL_NO_ERROR) {
+            System.out.println("OpenGL error: " + error);
+        }
     }
 
     @Override
@@ -241,6 +349,7 @@ public class OpenGLBindings implements GLEventListener {
         // Generate 4 VBOs for each mesh: vertex data; indices; instance model
         // matrices; 
         VBOs = new int[meshes.size() * VBO_AMOUNT];
+        System.out.println("Generating " + VBOs.length + " VBOs");
         gl.glGenBuffers(VBOs.length, VBOs, 0);
 
         for (int i = 0; i < meshes.size(); ++i) {
@@ -337,4 +446,15 @@ public class OpenGLBindings implements GLEventListener {
         this.viewMatrix = viewMatrix;
     }
 
+    public void setGlobalAmbient(float globalAmbient) {
+        this.globalAmbient = globalAmbient;
+    }
+
+    public void setDirectionalLight(DirectionalLight directionalLight) {
+        this.directionalLight = directionalLight;
+    }
+
+    public void setPositionalLights(List<PositionalLight> posLights) {
+        this.posLights = posLights;
+    }
 }
