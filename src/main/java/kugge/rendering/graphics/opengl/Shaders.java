@@ -1,6 +1,7 @@
 package kugge.rendering.graphics.opengl;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
@@ -14,8 +15,8 @@ public class Shaders {
     
     public record Shader(int type, String filename) {}
 
-    public static String[] readSourceFromFile(String absolutePath) throws IOException {
-        List<String> linesList = Files.readAllLines(Paths.get(absolutePath));
+    public static String[] readSourceFromFile(String fileName) throws IOException, URISyntaxException {
+        List<String> linesList = Files.readAllLines(Paths.get(Shaders.class.getResource("/shaders/" + fileName).toURI()));
         linesList = linesList.stream().map(line -> line.concat("\n")).collect(Collectors.toList());
         String[] linesArr = new String[linesList.size()];
         linesList.toArray(linesArr);

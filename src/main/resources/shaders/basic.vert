@@ -3,6 +3,7 @@
 // Uniforms
 uniform mat4 viewMx;
 uniform mat4 projectionMx;
+uniform mat4 lightSpaceMx;
 
 // Per mesh attributes
 layout(location = 0) in vec4 vPosition;
@@ -30,6 +31,7 @@ flat out float matShininess;
 out vec2 varyingTexCoord;
 out vec3 worldNormal;
 out vec4 worldPosition;
+out vec4 fragPosLightSpace;
 
 flat out int flatTextureIdx;
 
@@ -47,6 +49,8 @@ void main() {
     worldPosition = modelMx * vPosition;
 
     varyingTexCoord = vTextureCoord;
+
+    fragPosLightSpace = lightSpaceMx * worldPosition;
 
     // Apply transformations to position
     gl_Position = projectionMx * viewMx * worldPosition;

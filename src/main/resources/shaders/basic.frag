@@ -33,6 +33,8 @@ struct DirectionalLight {
 uniform vec3 viewPos;
 uniform sampler2DArray textureArray;
 
+uniform sampler2D shadowMap;
+
 #define MAX_LIGHTS 50
 uniform int nLights;
 uniform PositionalLight posLights[MAX_LIGHTS];
@@ -51,13 +53,15 @@ flat in float matShininess;
 in vec2 varyingTexCoord;
 in vec3 worldNormal;
 in vec4 worldPosition;
+in vec4 fragPosLightSpace;
 
 // Index into the texture array for instance's texture.
 flat in int flatTextureIdx;
 
-vec4 CalculateDirLight(DirectionalLight dirLight, vec3 N, vec3 V);
-vec4 CalculatePosLight(PositionalLight light, vec4 fragPos, vec3 N, vec3 V);
+Light CalculateDirLight(DirectionalLight dirLight, vec3 N, vec3 V);
+Light CalculatePosLight(PositionalLight light, vec4 fragPos, vec3 N, vec3 V);
 Light BlinnPhongShading(vec3 L, vec3 N, vec3 V);
+float CalculateShadow();
 
 void main() {
     // The N vector needs to be normalized after interpolation.
@@ -78,15 +82,37 @@ void main() {
     // Global ambient contribution
     lightColor += globalAmbient * matAmbient;
 
+    float shadow = CalculateShadow();
+
     // Directional light contribution
-    lightColor += CalculateDirLight(dirLight, N, V);
+    Light dirContribution = CalculateDirLight(dirLight, N, V);
+    lightColor += dirContribution.ambient + (1.0 - shadow) * (dirContribution.diffuse + dirContribution.specular);
 
     // Positional light contribution
-    for (int i = 0; i < nLights; ++i) {
-        lightColor += CalculatePosLight(posLights[i], worldPosition, N, V);
+    Light posContribution;
+    for (int i = 0; i < nLights && i < MAX_LIGHTS; ++i) {
+        posContribution = CalculatePosLight(posLights[i], worldPosition, N, V);
+        lightColor += posContribution.ambient + posContribution.diffuse + posContribution.diffuse;
     }
     
     gl_FragColor = textureColor * lightColor;
+}
+
+float CalculateShadow() {
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+
+    float bias = 0.00025;
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+
+    if (projCoords.z > 1.0) {
+        shadow = 0.0;
+    }
+
+    return shadow;
 }
 
 Light BlinnPhongShading(vec3 L, vec3 N, vec3 V) {
@@ -106,23 +132,25 @@ Light BlinnPhongShading(vec3 L, vec3 N, vec3 V) {
     return Light(ambient, diffuse, specular);
 }
 
-vec4 CalculateDirLight(DirectionalLight light, vec3 N, vec3 V) {
+Light CalculateDirLight(DirectionalLight light, vec3 N, vec3 V) {
     vec3 L = normalize(-light.direction);
     Light res = BlinnPhongShading(L, N, V);
-    return (
-        light.ambient * res.ambient + 
-        light.diffuse * res.diffuse +
-        light.specular * res.specular
+    Light final = Light(
+        res.ambient * light.ambient,
+        res.diffuse * light.diffuse,
+        res.specular * light.specular
     );
+    return final;
 }
 
-vec4 CalculatePosLight(PositionalLight light, vec4 fragPos, vec3 N, vec3 V) {
+Light CalculatePosLight(PositionalLight light, vec4 fragPos, vec3 N, vec3 V) {
     vec4 fragToLight = light.position - fragPos;
     
     float dist = length(fragToLight);
     // If the frag is not inside the cutoff, the light has no effect
     if (light.attenuation.radius < dist) {
-        return vec4(0.0);
+        vec4 nothing = vec4(0.0);
+        return Light(nothing, nothing, nothing);
     }
 
     vec3 L = normalize(fragToLight.xyz);
@@ -134,9 +162,9 @@ vec4 CalculatePosLight(PositionalLight light, vec4 fragPos, vec3 N, vec3 V) {
         light.attenuation.quadratic * pow(dist, 2)
     );
 
-    return (
-        light.ambient * res.ambient * attenuation + 
-        light.diffuse * res.diffuse * attenuation +
+    return Light(
+        light.ambient * res.ambient * attenuation, 
+        light.diffuse * res.diffuse * attenuation,
         light.specular * res.specular * attenuation
     );
 }

@@ -2,6 +2,8 @@ package kugge.rendering.core.objects;
 
 import java.util.List;
 
+import org.joml.Vector4f;
+
 import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.lights.PositionalLight;
 
@@ -12,7 +14,7 @@ public class RenderScene {
     private List<Instance> meshInstances;
 
     private List<PositionalLight> positionalLights;
-    private float ambientLight;
+    private Vector4f ambientLight;
     private DirectionalLight directionalLight;
 
     public RenderScene(Camera camera, List<Mesh> meshes, List<Instance> meshInstances) {
@@ -21,7 +23,7 @@ public class RenderScene {
         this.meshInstances = meshInstances;
 
         positionalLights = List.of();
-        ambientLight = 0.1f;
+        ambientLight = new Vector4f(0.5f);
         directionalLight = new DirectionalLight();
     }
 
@@ -57,12 +59,16 @@ public class RenderScene {
         this.positionalLights = positionalLights;
     }
 
-    public float getAmbientLight() {
+    public Vector4f getAmbientLight() {
         return ambientLight;
     }
 
     public void setAmbientLight(float ambientLight) {
-        this.ambientLight = ambientLight;
+        this.ambientLight.set(ambientLight);
+    }
+
+    public void setAmbientLight(Vector4f ambientLight) {
+        this.ambientLight.set(ambientLight);
     }
 
     public DirectionalLight getDirectionalLight() {

@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -42,6 +43,8 @@ public class OpenGLBindings implements GLEventListener {
     private Matrix4f viewMatrix;
     private Matrix4f inverseViewMatrix;
     private Vector3f viewPos;
+    private Matrix4f lightSpaceMatrix;
+    private Matrix4f lightViewMatrix;
 
     private int[] VAO;
     private int[] VBOs;
@@ -58,11 +61,20 @@ public class OpenGLBindings implements GLEventListener {
 
     private int shaderProgram;
     private Shader[] shaders = new Shader[] {
-            new Shader(GL_VERTEX_SHADER,
-                    "C:/Users/Kilian/Documents/Programming/Java/rendering-engine/src/main/resources/shaders/basic.vert"),
-            new Shader(GL_FRAGMENT_SHADER,
-                    "C:/Users/Kilian/Documents/Programming/Java/rendering-engine/src/main/resources/shaders/basic.frag")
+        new Shader(GL_VERTEX_SHADER, "basic.vert"),
+        new Shader(GL_FRAGMENT_SHADER, "basic.frag")
     };
+
+    private int shadowShaderProgram;
+    private Shader[] shadowShaders = new Shader[] {
+        new Shader(GL_VERTEX_SHADER, "shadow.vert"),
+        new Shader(GL_FRAGMENT_SHADER,"shadow.frag")
+    };
+
+    private final int SHADOW_WIDTH = 1024;
+    private final int SHADOW_HEIGHT = 1024;
+    private int depthMapFBO;
+    private int depthMapTexture;
 
     // Camera settings
     private float fov = 60f;
@@ -70,7 +82,7 @@ public class OpenGLBindings implements GLEventListener {
     private float far = 1000f;
 
     // Lighting
-    private float globalAmbient = 0.1f;
+    private Vector4f globalAmbient = new Vector4f(0.2f);
     private DirectionalLight directionalLight = new DirectionalLight();
     private List<PositionalLight> posLights = new ArrayList<>();
 
@@ -82,7 +94,9 @@ public class OpenGLBindings implements GLEventListener {
         viewMatrix = new Matrix4f();
         inverseViewMatrix = new Matrix4f();
         viewPos = new Vector3f();
-        
+        lightSpaceMatrix = new Matrix4f();
+        lightViewMatrix = new Matrix4f();
+
         this.meshes = meshes;
     }
 
@@ -96,6 +110,7 @@ public class OpenGLBindings implements GLEventListener {
 
         try {
             shaderProgram = Shaders.loadShaders(shaders, gl);
+            shadowShaderProgram = Shaders.loadShaders(shadowShaders, gl);
         } catch (Exception e) {
             e.printStackTrace();
             // TODO Handle exception
@@ -106,9 +121,14 @@ public class OpenGLBindings implements GLEventListener {
 
         loadMeshes(meshes, gl);
 
+        // Set up depth map FBO
+        setupDepthBuffer(gl);
+
         // Configure depth test
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDepthFunc(GL_LESS);
+        
+        // Configure culling
         gl.glEnable(GL_CULL_FACE);
         gl.glCullFace(GL_BACK);
         gl.glFrontFace(GL_CCW);
@@ -119,16 +139,19 @@ public class OpenGLBindings implements GLEventListener {
     @Override
     public void display(GLAutoDrawable drawable) {
         GL4 gl = drawable.getGL().getGL4();
+        gl.glBindVertexArray(VAO[0]);
 
         // Clear screen
         gl.glClear(GL_COLOR_BUFFER_BIT);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
 
+        // Setup normal shader program
         gl.glUseProgram(shaderProgram);
 
         // Get uniform locations
         int projectionMxLox = gl.glGetUniformLocation(shaderProgram, "projectionMx");
         int viewMxLoc = gl.glGetUniformLocation(shaderProgram, "viewMx");
+        int lightSpaceMxLoc = gl.glGetUniformLocation(shaderProgram, "lightSpaceMx");
 
         int viewPosLoc = gl.glGetUniformLocation(shaderProgram, "viewPos");
         int globalAmbientLoc = gl.glGetUniformLocation(shaderProgram, "globalAmbient");
@@ -144,12 +167,19 @@ public class OpenGLBindings implements GLEventListener {
         gl.glUniformMatrix4fv(projectionMxLox, 1, false, projectionMatrix.get(matrixVals));
         gl.glUniformMatrix4fv(viewMxLoc, 1, false, viewMatrix.get(matrixVals));
 
+        // Calculate and set light space matrix
+        lightSpaceMatrix.identity().ortho(-10, 10, -10, 10, near, far);
+        lightViewMatrix.identity().lookAt(new Vector3f().sub(directionalLight.getDirection()).mul(10), new Vector3f(0, 0, 0), new Vector3f(0, 1, 0));
+        lightSpaceMatrix.mul(lightViewMatrix);
+
+        gl.glUniformMatrix4fv(lightSpaceMxLoc, 1, false, lightSpaceMatrix.get(matrixVals));
+
         // Set view position uniform
         inverseViewMatrix.set(viewMatrix).invert().getColumn(3, viewPos);
         gl.glUniform3fv(viewPosLoc, 1, viewPos.get(matrixVals));
 
         // Set global ambient uniform
-        gl.glUniform1f(globalAmbientLoc, globalAmbient);
+        gl.glUniform3fv(globalAmbientLoc, 1, globalAmbient.get(matrixVals));
 
         // Set directional light uniforms
         gl.glUniform4fv(dirLightAmbientLoc, 1, directionalLight.getAmbient().get(matrixVals));
@@ -187,38 +217,79 @@ public class OpenGLBindings implements GLEventListener {
         int normalLoc = gl.glGetAttribLocation(shaderProgram, "vNormal");
         int modelMxLoc = gl.glGetAttribLocation(shaderProgram, "modelMx");
 
-        gl.glBindVertexArray(VAO[0]);
+        // Setup shadow shader program
+        gl.glUseProgram(shadowShaderProgram);
+
+        // Get shadow shader uniform and attribute locations
+        lightSpaceMxLoc = gl.glGetUniformLocation(shadowShaderProgram, "lightSpaceMx");
+        int modelMxShadowLoc = gl.glGetAttribLocation(shadowShaderProgram, "modelMx");
+        int shadowPositionLoc = gl.glGetAttribLocation(shadowShaderProgram, "vPosition");
+
+        // Send light space matrix to shadow shader
+        gl.glUniformMatrix4fv(lightSpaceMxLoc, 1, false, lightSpaceMatrix.get(matrixVals));
 
 
+        // ----------------- SHADOW MAP RENDERING -----------------
+        gl.glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        gl.glCullFace(GL_FRONT);
         // Render all meshes
         for (MeshData mesh : meshData) {
             List<Instance> instances = meshInstances.get(mesh.id);
 
             // Skip if there are no instances of this mesh
             if (instances == null || instances.size() == 0) {
-                System.out.println("No instances of mesh " + mesh.id + " found");
                 continue;
             }
-            System.out.println("Rendering " + instances.size() + " instances of mesh " + mesh.id);
+
+            // Get model matrices for each instance
+            FloatBuffer modelMxBuffer = Buffers.newDirectFloatBuffer(instances.size() * 16);
+            for (int j = 0; j < instances.size(); ++j) {
+                Instance instance = instances.get(j);
+                // Put model matrix into buffer
+                instance.getTransform().getModelMatrix().get(j*16, modelMxBuffer);
+            }
 
             int meshVBOIdx = mesh.VBOi;
 
-            // Bind mesh vertex data buffer
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx]);
-            
-            // Set vertex position data to shader
-            gl.glEnableVertexAttribArray(positionLoc);
-            gl.glVertexAttribPointer(positionLoc, 3, GL_FLOAT, false, 0, 0);
+            // Bind model matrix buffer and send model matrices to GPU
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MODEL_MATRIX_VBO]);
+            gl.glBufferData(GL_ARRAY_BUFFER, modelMxBuffer.limit() * Float.BYTES, modelMxBuffer, GL_STATIC_DRAW);
 
-            // Set vertex texture coordinate data to shader
-            gl.glEnableVertexAttribArray(texCoordLoc);
-            gl.glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, false, 0, mesh.numVertices * 3 * Float.BYTES);
-            
-            // Set vertex normal data to shader
-            gl.glEnableVertexAttribArray(normalLoc);
-            gl.glVertexAttribPointer(normalLoc, 3, GL_FLOAT, false, 0, mesh.numVertices * 5 * Float.BYTES);
+            // Setup model matrix attribute pointers to shadow shader
+            setupInstancedMat4Attribute(gl, modelMxShadowLoc);
 
-            // Get model matrices, material data and texture indices for each instance
+            // Set vertex position data to shadow shader
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + VERTEX_DATA_VBO]);
+            gl.glEnableVertexAttribArray(shadowPositionLoc);
+            gl.glVertexAttribPointer(shadowPositionLoc, 3, GL_FLOAT, false, 0, 0);
+
+            // Bind mesh index buffer and draw
+            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[meshVBOIdx + INDEX_DATA_VBO]);
+            gl.glDrawElementsInstanced(GL_TRIANGLES, mesh.numIndices, GL_UNSIGNED_INT, 0, instances.size());
+        }
+        
+        // ----------------- NORMAL RENDERING -----------------
+        
+        gl.glCullFace(GL_BACK);
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // Reset viewport
+        resizeViewPort(drawable);
+        gl.glClear(GL_DEPTH_BUFFER_BIT);
+        gl.glClear(GL_COLOR_BUFFER_BIT);
+        
+        gl.glUseProgram(shaderProgram);
+        for (MeshData mesh : meshData) {
+
+            int meshVBOIdx = mesh.VBOi;
+
+            List<Instance> instances = meshInstances.get(mesh.id);
+
+            // Skip if there are no instances of this mesh
+            if (instances == null || instances.size() == 0) {
+                continue;
+            }
+
             FloatBuffer modelMxBuffer = Buffers.newDirectFloatBuffer(instances.size() * 16);
             FloatBuffer materialBuffer = Buffers.newDirectFloatBuffer(13 * instances.size());
             int[] textureIndices = new int[instances.size()];
@@ -241,16 +312,31 @@ public class OpenGLBindings implements GLEventListener {
                 textureIndices[j] = instance.getTextureIndex();
             }
 
-            // Bind model matrix buffer and send data to GPU
+
+            // Bind model matrix buffer and send model matrices to GPU
             gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MODEL_MATRIX_VBO]);
             gl.glBufferData(GL_ARRAY_BUFFER, modelMxBuffer.limit() * Float.BYTES, modelMxBuffer, GL_STATIC_DRAW);
 
-            // A model matrix is 4x4, so we need to set up 4 attribute pointers
-            for (int j = 0; j < 4; ++j) {
-                gl.glVertexAttribPointer(modelMxLoc + j, 4, GL_FLOAT, false, 16 * 4, 16 * j);
-                gl.glEnableVertexAttribArray(modelMxLoc + j);
-                gl.glVertexAttribDivisor(modelMxLoc + j, 1);
-            }
+            // Bind mesh vertex data buffer
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + VERTEX_DATA_VBO]);
+
+            // Set vertex position data to shader
+            gl.glEnableVertexAttribArray(positionLoc);
+            gl.glVertexAttribPointer(positionLoc, 3, GL_FLOAT, false, 0, 0);
+
+            // Set vertex texture coordinate data to shader
+            gl.glEnableVertexAttribArray(texCoordLoc);
+            gl.glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, false, 0, mesh.numVertices * 3 * Float.BYTES);
+            
+            // Set vertex normal data to shader
+            gl.glEnableVertexAttribArray(normalLoc);
+            gl.glVertexAttribPointer(normalLoc, 3, GL_FLOAT, false, 0, mesh.numVertices * 5 * Float.BYTES);
+
+            // Bind model matrix buffer. 
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MODEL_MATRIX_VBO]);
+
+            // Setup model matrix attribute pointers
+            setupInstancedMat4Attribute(gl, modelMxLoc);
 
             // Bind material buffer and send data to GPU
             gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MATERIAL_VBO]);
@@ -293,6 +379,13 @@ public class OpenGLBindings implements GLEventListener {
             gl.glActiveTexture(GL_TEXTURE0);
             gl.glBindTexture(GL_TEXTURE_2D_ARRAY, mesh.textureArrayID);
             gl.glUniform1i(gl.glGetUniformLocation(shaderProgram, "textureArray"), 0);
+
+            
+            // Bind shadow map
+            gl.glActiveTexture(GL_TEXTURE1);
+            gl.glBindTexture(GL_TEXTURE_2D, depthMapTexture);
+            gl.glUniform1i(gl.glGetUniformLocation(shaderProgram, "shadowMap"), 1);
+            
             
             // Bind mesh index buffer and draw
             gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[meshVBOIdx + INDEX_DATA_VBO]);
@@ -307,6 +400,14 @@ public class OpenGLBindings implements GLEventListener {
         }
     }
 
+    private void setupInstancedMat4Attribute(GL4 gl, int location) {
+        for (int i = 0; i < 4; ++i) {
+            gl.glVertexAttribPointer(location + i, 4, GL_FLOAT, false, 16 * 4, 16 * i);
+            gl.glEnableVertexAttribArray(location + i);
+            gl.glVertexAttribDivisor(location + i, 1);
+        }
+    }
+
     @Override
     public void dispose(GLAutoDrawable drawable) {
         GL4 gl = drawable.getGL().getGL4();
@@ -317,6 +418,10 @@ public class OpenGLBindings implements GLEventListener {
 
     @Override
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
+        resizeViewPort(drawable);
+    }
+
+    private void resizeViewPort(GLAutoDrawable drawable) {
         GL4 gl = drawable.getGL().getGL4();
         int viewportWidth = drawable.getSurfaceWidth();
         int viewportHeight = drawable.getSurfaceHeight();
@@ -327,8 +432,8 @@ public class OpenGLBindings implements GLEventListener {
             Component comp = (Component) drawable;
             AffineTransform at = comp.getGraphicsConfiguration().getDefaultTransform();
             float sx = (float) at.getScaleX(), sy = (float) at.getScaleY();
-            viewportWidth = (int) (width * sx);
-            viewportHeight = (int) (height * sy);
+            viewportWidth = (int) (viewportWidth * sx);
+            viewportHeight = (int) (viewportHeight * sy);
         }
         gl.glViewport(0, 0, viewportWidth, viewportHeight);
         updateProjectionMatrix((float) viewportWidth / viewportHeight);
@@ -346,8 +451,7 @@ public class OpenGLBindings implements GLEventListener {
         clearVBOs(gl);
         gl.glBindVertexArray(VAO[0]);
 
-        // Generate 4 VBOs for each mesh: vertex data; indices; instance model
-        // matrices; 
+        // Generate VBOs
         VBOs = new int[meshes.size() * VBO_AMOUNT];
         System.out.println("Generating " + VBOs.length + " VBOs");
         gl.glGenBuffers(VBOs.length, VBOs, 0);
@@ -407,12 +511,44 @@ public class OpenGLBindings implements GLEventListener {
             gl.glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, texture.getWidth(), texture.getHeight(), 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, Buffers.newDirectIntBuffer(texture.getPixels()));
         }
 
+        // Set texture parameters
         for (var entry : mesh.getTextureParameters().entrySet()) {
             gl.glTexParameteri(GL_TEXTURE_2D_ARRAY, entry.getKey(), entry.getValue());
         }
 
         return textureArrayID[0];
     }
+
+    private void setupDepthBuffer(GL4 gl) {
+        int[] depthMap = new int[1];
+        gl.glGenFramebuffers(1, depthMap, 0);   
+        depthMapFBO = depthMap[0];
+
+        int[] depthMapTextureArray = new int[1];
+        gl.glGenTextures(1, depthMapTextureArray, 0);
+        depthMapTexture = depthMapTextureArray[0];
+        gl.glBindTexture(GL_TEXTURE_2D, depthMapTexture);
+
+        gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, null);
+        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        float[] borderColor = {1.0f, 1.0f, 1.0f, 1.0f};
+        gl.glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor, 0);
+
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        gl.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMapTexture, 0);
+        gl.glDrawBuffer(GL_NONE);
+        gl.glReadBuffer(GL_NONE);
+
+        int error = gl.glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (error != GL_FRAMEBUFFER_COMPLETE) {
+            System.out.println("Framebuffer error: " + error);
+        } else {
+            System.out.println("Framebuffer complete");
+        }
+    }   
 
     /**
      * Deletes all VBOs.
@@ -447,7 +583,11 @@ public class OpenGLBindings implements GLEventListener {
     }
 
     public void setGlobalAmbient(float globalAmbient) {
-        this.globalAmbient = globalAmbient;
+        this.globalAmbient.set(globalAmbient);
+    }
+
+    public void setGlobalAmbient(Vector4f globalAmbient) {
+        this.globalAmbient.set(globalAmbient);
     }
 
     public void setDirectionalLight(DirectionalLight directionalLight) {

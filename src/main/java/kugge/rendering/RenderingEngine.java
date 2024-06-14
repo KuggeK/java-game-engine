@@ -68,8 +68,11 @@ public class RenderingEngine {
             e.printStackTrace();
         }
 
+        // A big sphere
+        instances.add(new Instance(1, new float[] {-3, -7, -3}, new float[] {0, 0, 0}, new float[] {1.2f, 1.2f, 1.2f}, Materials.BRONZE));
+        
         for (int i = -5; i < 5; i++) {
-            Instance instance1 = new Instance(1, new float[] {i, 0, -5}, new float[] {0, 0, 0}, new float[] {0.3f, 0.3f, 0.3f}, Materials.RED);
+            Instance instance1 = new Instance(1, new float[] {i, -10, -5}, new float[] {0, 0, 0}, new float[] {0.3f, 0.3f, 0.3f}, Materials.RED);
             instance1.setTextureIndex(0);
 
             // Set texture index to -1 to disable texture
@@ -79,20 +82,26 @@ public class RenderingEngine {
             }
 
             instances.add(instance1);
-            Instance instance2 = new Instance(2, new float[] {0, i, -5}, new float[] {0, 0, 0}, new float[] {0.3f, .3f, 0.3f}, Materials.BRONZE);
+            Instance instance2 = new Instance(2, new float[] {0, i-10, -5}, new float[] {0, 0, 0}, new float[] {0.3f, .3f, 0.3f}, Materials.GOLD);
             instance2.setTextureIndex(0);
             instances.add(instance2);
         }
 
+        // Add a floor
+        instances.add(new Instance(2, new float[] {0, -11, -5},  new float[] {0, 0, 0}, new float[] {100, 0.1f, 100}, Materials.DEFAULT));
+
         camera = new Camera();
+        camera.getTransform().setPosition(0, -9, 2);
         scene = new RenderScene(camera, meshes, instances);
 
         scene.setDirectionalLight(new DirectionalLight(
-            new float[] {0.1f, 0.1f, 0.1f, 1.0f}, // Ambient
+            new float[] {0.2f, 0.2f, 0.2f, 1.0f}, // Ambient
             new float[] {0.5f, 0.5f, 0.5f, 1.0f}, // Diffuse
             new float[] {1.0f, 1.0f, 1.0f, 1.0f}, // Specular
             new float[] {0.5f, -1.0f, -1.0f, 0.0f} // Direction
             ));
+
+        scene.setAmbientLight(0.9f);
 
         switch (type) {
             case OPENGL:
