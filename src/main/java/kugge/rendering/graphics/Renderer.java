@@ -10,7 +10,7 @@ public interface Renderer {
     /**
      * Renders the current scene. If the previous render is still running, do nothing.
      */
-    public void render();
+    void render();
 
     /**
      * Renders the current scene. If force is true and the previous render is still running, 
@@ -18,17 +18,17 @@ public interface Renderer {
      * previous render is still running, do nothing.
      * @param force Whether to force the render or not.
      */
-    public void render(boolean force);
+    void render(boolean force);
 
     /**
      * Sets the scene to render.
      * @param scene The scene to render.
      */
-    public void setRenderScene(RenderScene scene);
+    void setRenderScene(RenderScene scene);
 
     /**
      * Initializes the renderer with the given window.
      * @param window The window to render to.
      */
-    public void linkToWindow(Window window);
+    void linkToWindow(Window window);
 }

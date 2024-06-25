@@ -17,7 +17,8 @@ public class OpenGLRenderer implements Renderer {
 
     public OpenGLRenderer(RenderScene scene) {
         this.scene = scene;
-        bindings = new OpenGLBindings(scene.getMeshes());
+        bindings = new OpenGLBindings(scene.getMeshes(), scene.getMaterials());
+        bindings.setTextures(scene.getTextures());
         renderThread = new Thread(renderRun); 
     }
 
@@ -47,7 +48,7 @@ public class OpenGLRenderer implements Renderer {
         bindings.setInstances(scene.getInstances());
 
         // Set light information
-        bindings.setGlobalAmbient(scene.getAmbientLight());
+        bindings.setGlobalAmbient(scene.getGlobalAmbient());
         bindings.setDirectionalLight(scene.getDirectionalLight());
         bindings.setPositionalLights(scene.getPositionalLights());
 

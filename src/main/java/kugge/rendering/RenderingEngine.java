@@ -1,118 +1,106 @@
 package kugge.rendering;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import com.jogamp.opengl.GL;
+import java.awt.event.KeyEvent;
+import java.util.Set;
 
 import kugge.rendering.core.KeyInput;
-import kugge.rendering.core.objects.Camera;
-import kugge.rendering.core.objects.Cube;
-import kugge.rendering.core.objects.Instance;
-import kugge.rendering.core.objects.Mesh;
+import kugge.rendering.core.SceneStorage;
+import kugge.rendering.core.config.EngineProjectConfiguration;
+import kugge.rendering.core.json.SceneStorageJSON;
 import kugge.rendering.core.objects.RenderScene;
-import kugge.rendering.core.objects.Sphere;
-import kugge.rendering.core.objects.Texture;
-import kugge.rendering.core.objects.lights.DirectionalLight;
-import kugge.rendering.core.objects.materials.Materials;
 import kugge.rendering.graphics.Renderer;
 import kugge.rendering.graphics.Window;
 import kugge.rendering.graphics.opengl.OpenGLRenderer;
 import kugge.rendering.graphics.opengl.OpenGLWindow;
 
 public class RenderingEngine {
-    Renderer renderer;
-    Window window;
-    RenderScene scene;
-    KeyInput keyInput = new KeyInput();
-    Thread inputThread;
-    Camera camera;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        if (args.length == 0) {
+            throw new IllegalArgumentException("No project path provided.");
+        }
+
         RenderingEngine engine = new RenderingEngine();
-        String type = args.length > 0 ? args[0] : "OPENGL";
-        engine.start(RendererType.valueOf(type));
+        String projectPath = args[0];
+        EngineProjectConfiguration config = EngineProjectConfiguration.loadProjectConfiguration(projectPath);
+        engine.start(config);
     }
 
-    enum RendererType {
-        OPENGL
-    }
+    public void start(EngineProjectConfiguration config) {
+        
+        // Populate the global paths from the configuration
+        EngineProjectConfiguration.populateGlobalPaths(config);
 
-    public void start(RendererType type) {
-        List<Mesh> meshes = List.of(
-            Sphere.withId(1),
-            new Cube(2)
+        // Load the initial scene
+        RenderScene scene = null;
+        try {
+            SceneStorage storage = new SceneStorageJSON();
+            scene = storage.loadScene(config.getInitialSceneID());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        // Create the window and renderer and link them together
+        Renderer renderer = new OpenGLRenderer(scene);
+        Window window = new OpenGLWindow(config);                
+        renderer.linkToWindow(window);
+        
+        // Bind the key input to listen to the window
+        KeyInput keyInput = new KeyInput();
+        keyInput.bindToWindow(window);
+        
+        // Set of objects that need to be updated every frame
+        Set<Updateable> updateables = Set.of(
+            new CameraController(scene.getCamera())
         );
-        List<Instance> instances = new ArrayList<>();
+
+        // Timing variables
+        long currentTime = 0;
+        long previousTime = System.currentTimeMillis();
+        long deltaTime = 0;
+        long timeTaken = 0;
+        int targetFPS = config.getTargetFPS();
+
+        // Game loop
+        while (true) {
+            currentTime = System.currentTimeMillis();
+            deltaTime = currentTime - previousTime;
+            previousTime = currentTime;
+
+            if (keyInput.isKeyPressed(KeyEvent.VK_ESCAPE)) {
+                break;
+            }
+
+            // Update
+            for (Updateable updateable : updateables) {
+                updateable.update(keyInput, deltaTime);
+            }
+
+            keyInput.clear();
+            renderer.render();
+
+            // If the time taken by this frame is less than the target time, sleep for the difference
+            timeTaken = System.currentTimeMillis() - currentTime;
+            if (timeTaken < 1000 / targetFPS) {
+                try {
+                    if (targetFPS - timeTaken != 0) {
+                        Thread.sleep(1000 / targetFPS - timeTaken);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        window.destroy();
 
         try {
-            meshes.get(0).setTextureParameters(Map.of(
-                GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT,
-                GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT,
-                GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR,
-                GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR
-            ));
-            meshes.get(0).addTexture(Texture.loadTexture("/textures/brick.jpg"));
-
-            meshes.get(1).setTextureParameters(Map.of(
-                GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE,
-                GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE,
-                GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST,
-                GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR
-            ));
-            meshes.get(1).addTexture(Texture.loadTexture("/textures/grass.jpg"));
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
+            SceneStorage storage = new SceneStorageJSON();
+            storage.saveScene(scene);
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // A big sphere
-        instances.add(new Instance(1, new float[] {-3, -7, -3}, new float[] {0, 0, 0}, new float[] {1.2f, 1.2f, 1.2f}, Materials.BRONZE));
-        
-        for (int i = -5; i < 5; i++) {
-            Instance instance1 = new Instance(1, new float[] {i, -10, -5}, new float[] {0, 0, 0}, new float[] {0.3f, 0.3f, 0.3f}, Materials.RED);
-            instance1.setTextureIndex(0);
-
-            // Set texture index to -1 to disable texture
-            if (i == 1) {
-                instance1.setTextureIndex(-1);
-                instance1.setMaterial(Materials.EMERALD);
-            }
-
-            instances.add(instance1);
-            Instance instance2 = new Instance(2, new float[] {0, i-10, -5}, new float[] {0, 0, 0}, new float[] {0.3f, .3f, 0.3f}, Materials.GOLD);
-            instance2.setTextureIndex(0);
-            instances.add(instance2);
-        }
-
-        // Add a floor
-        instances.add(new Instance(2, new float[] {0, -11, -5},  new float[] {0, 0, 0}, new float[] {100, 0.1f, 100}, Materials.DEFAULT));
-
-        camera = new Camera();
-        camera.getTransform().setPosition(0, -9, 2);
-        scene = new RenderScene(camera, meshes, instances);
-
-        scene.setDirectionalLight(new DirectionalLight(
-            new float[] {0.2f, 0.2f, 0.2f, 1.0f}, // Ambient
-            new float[] {0.5f, 0.5f, 0.5f, 1.0f}, // Diffuse
-            new float[] {1.0f, 1.0f, 1.0f, 1.0f}, // Specular
-            new float[] {0.5f, -1.0f, -1.0f, 0.0f} // Direction
-            ));
-
-        scene.setAmbientLight(0.9f);
-
-        switch (type) {
-            case OPENGL:
-                renderer = new OpenGLRenderer(scene);
-                window = new OpenGLWindow();
-                break;        
-        }
-        keyInput = new KeyInput();
-        window.registerEventListener(new DebugKeyInput(camera, renderer));
-        
-        renderer.linkToWindow(window);
-        renderer.render();
+        System.exit(0);
     }
 }

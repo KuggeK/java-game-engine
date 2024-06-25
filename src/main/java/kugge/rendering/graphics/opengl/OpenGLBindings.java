@@ -9,6 +9,7 @@ import java.awt.geom.AffineTransform;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +35,11 @@ public class OpenGLBindings implements GLEventListener {
     record MeshData(int id, int VBOi, int numVertices, int numIndices, Material material, int textureArrayID) {}
     private List<Mesh> meshes;
     private List<MeshData> meshData;
+    private List<Texture> textures;
 
     private Map<Integer, List<Instance>> meshInstances;
+
+    private Map<Integer, Material> materials;
 
     // Buffer for transferring matrix data to the GPU
     private FloatBuffer matrixVals = Buffers.newDirectFloatBuffer(16);
@@ -86,7 +90,7 @@ public class OpenGLBindings implements GLEventListener {
     private DirectionalLight directionalLight = new DirectionalLight();
     private List<PositionalLight> posLights = new ArrayList<>();
 
-    public OpenGLBindings(List<Mesh> meshes) {
+    public OpenGLBindings(List<Mesh> meshes, List<Material> materials) {
         meshData = new ArrayList<>();
         meshInstances = new HashMap<>();
 
@@ -98,6 +102,7 @@ public class OpenGLBindings implements GLEventListener {
         lightViewMatrix = new Matrix4f();
 
         this.meshes = meshes;
+        this.materials = materials.stream().collect(Collectors.toMap(Material::ID, m -> m));
     }
 
     @Override
@@ -143,7 +148,6 @@ public class OpenGLBindings implements GLEventListener {
 
         // Clear screen
         gl.glClear(GL_COLOR_BUFFER_BIT);
-        gl.glClear(GL_DEPTH_BUFFER_BIT);
 
         // Setup normal shader program
         gl.glUseProgram(shaderProgram);
@@ -233,6 +237,8 @@ public class OpenGLBindings implements GLEventListener {
         gl.glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         gl.glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         gl.glCullFace(GL_FRONT);
+        gl.glClear(GL_DEPTH_BUFFER_BIT);
+
         // Render all meshes
         for (MeshData mesh : meshData) {
             List<Instance> instances = meshInstances.get(mesh.id);
@@ -299,7 +305,7 @@ public class OpenGLBindings implements GLEventListener {
                 instance.getTransform().getModelMatrix().get(j*16, modelMxBuffer);
 
                 // Get material data
-                Material material = instance.getMaterial();
+                Material material = materials.get(instance.getMaterialID());
                 if (material == null) {
                     material = mesh.material;
                 }
@@ -364,23 +370,31 @@ public class OpenGLBindings implements GLEventListener {
             gl.glEnableVertexAttribArray(shininessLoc);
             gl.glVertexAttribDivisor(shininessLoc, 1);
 
-            // Bind texture index buffer and send data to GPU
-            IntBuffer textureIndicesBuffer = Buffers.newDirectIntBuffer(textureIndices);
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + TEXTURE_INDEX_VBO]);
-            gl.glBufferData(GL_ARRAY_BUFFER, textureIndicesBuffer.limit() * Integer.BYTES, textureIndicesBuffer, GL_STATIC_DRAW);
 
+            if (mesh.textureArrayID != -1) {
+                // Bind texture index buffer and send data to GPU
+                IntBuffer textureIndicesBuffer = Buffers.newDirectIntBuffer(textureIndices);
+                gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + TEXTURE_INDEX_VBO]);
+                gl.glBufferData(GL_ARRAY_BUFFER, textureIndicesBuffer.limit() * Integer.BYTES, textureIndicesBuffer, GL_STATIC_DRAW);
+
+                // Bind the texture array
+                gl.glActiveTexture(GL_TEXTURE0);
+                gl.glBindTexture(GL_TEXTURE_2D_ARRAY, mesh.textureArrayID);
+                gl.glUniform1i(gl.glGetUniformLocation(shaderProgram, "textureArray"), 0);
+            } else {
+                int[] defaultIndices = new int[instances.size()];
+                Arrays.fill(defaultIndices, -1);
+                IntBuffer textureIndicesBuffer = Buffers.newDirectIntBuffer(defaultIndices);
+                gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + TEXTURE_INDEX_VBO]);
+                gl.glBufferData(GL_ARRAY_BUFFER, textureIndicesBuffer.limit() * Integer.BYTES, textureIndicesBuffer, GL_STATIC_DRAW);
+            }
+            
             // Bind texture index information to shader
             int textureIndexLoc = gl.glGetAttribLocation(shaderProgram, "textureIdx");
             gl.glVertexAttribIPointer(textureIndexLoc, 1, GL_INT, 0, 0);
             gl.glEnableVertexAttribArray(textureIndexLoc);
             gl.glVertexAttribDivisor(textureIndexLoc, 1);
 
-            // Bind the texture array
-            gl.glActiveTexture(GL_TEXTURE0);
-            gl.glBindTexture(GL_TEXTURE_2D_ARRAY, mesh.textureArrayID);
-            gl.glUniform1i(gl.glGetUniformLocation(shaderProgram, "textureArray"), 0);
-
-            
             // Bind shadow map
             gl.glActiveTexture(GL_TEXTURE1);
             gl.glBindTexture(GL_TEXTURE_2D, depthMapTexture);
@@ -477,7 +491,7 @@ public class OpenGLBindings implements GLEventListener {
 
             // Save mesh data
             int meshVBOIdx = i * VBO_AMOUNT;
-            meshData.add(new MeshData(mesh.getId(), meshVBOIdx, mesh.getNumVertices(), mesh.getNumIndices(), mesh.getMaterial(), meshArrayTextureId));
+            meshData.add(new MeshData(mesh.getID(), meshVBOIdx, mesh.getNumVertices(), mesh.getNumIndices(), mesh.getMaterial(), meshArrayTextureId));
 
             // Send vertex position, texture coordinate and normal data to GPU.
             gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + VERTEX_DATA_VBO]);
@@ -489,14 +503,18 @@ public class OpenGLBindings implements GLEventListener {
                     GL_STATIC_DRAW);
         }
 
-        // Set the meshes to null to free up memory, because the data is now stored in
+        // Set the meshes and textures to null to free up memory, because the data is now stored in
         // the VBOs on the GPU
         meshes = null;
+        textures = null;
     }
 
     private int loadMeshTextures(Mesh mesh, GL4 gl) {
-        List<Texture> textures = mesh.getTextures();
-        if (textures.size() == 0) {
+        List<Texture> meshTextures = textures.stream()
+                .filter(t -> mesh.getTextureIDs().contains(t.getID()))
+                .collect(Collectors.toList());
+
+        if (meshTextures.size() == 0) {
             return -1;
         }
 
@@ -504,10 +522,10 @@ public class OpenGLBindings implements GLEventListener {
         int[] textureArrayID = new int[1];
         gl.glGenTextures(1, textureArrayID, 0);
         gl.glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayID[0]);
-        gl.glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, textures.get(0).getWidth(), textures.get(0).getHeight(), textures.size());
+        gl.glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, meshTextures.get(0).getWidth(), meshTextures.get(0).getHeight(), meshTextures.size());
 
-        for (int i = 0; i < textures.size(); ++i) {
-            Texture texture = textures.get(i);
+        for (int i = 0; i < meshTextures.size(); ++i) {
+            Texture texture = meshTextures.get(i);
             gl.glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, texture.getWidth(), texture.getHeight(), 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, Buffers.newDirectIntBuffer(texture.getPixels()));
         }
 
@@ -596,5 +614,9 @@ public class OpenGLBindings implements GLEventListener {
 
     public void setPositionalLights(List<PositionalLight> posLights) {
         this.posLights = posLights;
+    }
+
+    public void setTextures(List<Texture> textures) {
+        this.textures = textures;
     }
 }

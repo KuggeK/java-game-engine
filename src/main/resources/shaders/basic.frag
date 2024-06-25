@@ -102,11 +102,21 @@ float CalculateShadow() {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
 
-    float closestDepth = texture(shadowMap, projCoords.xy).r;
     float currentDepth = projCoords.z;
 
     float bias = 0.00025;
-    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+
+    int range = 2;
+    for (int x = -range; x <= range; ++x) {
+        for (int y = -range; y <= range; ++y) {
+            float texDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += (currentDepth - bias) > texDepth ? 1.0 : 0.0;
+        }
+    }
+
+    shadow /= (pow(range + range + 1, 2));
 
     if (projCoords.z > 1.0) {
         shadow = 0.0;

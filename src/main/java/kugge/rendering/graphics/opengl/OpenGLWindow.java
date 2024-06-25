@@ -2,6 +2,8 @@ package kugge.rendering.graphics.opengl;
 
 import java.awt.event.KeyListener;
 import java.util.EventListener;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.swing.JFrame;
 
@@ -16,6 +18,7 @@ public class OpenGLWindow extends JFrame implements Window {
     private WindowSettings settings;
     private static final WindowSettings DEFAULT_SETTINGS = new WindowSettings(800, 600, "Window");
     private GLCanvas canvas;
+    private Set<EventListener> listeners;
 
     public OpenGLWindow() {
         this(DEFAULT_SETTINGS);
@@ -24,6 +27,7 @@ public class OpenGLWindow extends JFrame implements Window {
     public OpenGLWindow(WindowSettings settings) {
         super(settings.getTitle());
         this.settings = settings;
+        listeners = new HashSet<>();
         updateSettings();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         canvas = new GLCanvas();
@@ -56,5 +60,20 @@ public class OpenGLWindow extends JFrame implements Window {
         } else {
             throw new IllegalArgumentException("Listener type not supported");
         }
+        listeners.add(listener);
+    }
+
+    @Override
+    public void destroy() {
+        for (EventListener listener : listeners) {
+            if (listener instanceof GLEventListener) {
+                ((GLEventListener) listener).dispose(canvas);
+                canvas.removeGLEventListener((GLEventListener) listener);
+            } else if (listener instanceof KeyListener) {
+                canvas.removeKeyListener((KeyListener) listener);
+            }
+        }
+        canvas.destroy();
+        dispose();
     }
 }
