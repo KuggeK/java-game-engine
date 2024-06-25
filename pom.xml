@@ -62,6 +62,7 @@
         <configuration>
           <mainClass>kugge.rendering.RenderingEngine</mainClass>
           <arguments>
+            <argument>defaultProject.json</argument>
           </arguments>
         </configuration>
       </plugin>

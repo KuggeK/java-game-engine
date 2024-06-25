@@ -1,0 +1,24 @@
+{
+    "projectName": "New project",
+    "projectDescription": "A new, blank project",
+    "projectVersion": "1.0-SNAPSHOT",
+    "projectAuthor": "",
+
+    "targetFPS": 120,
+    "width": 1000,
+    "height": 720,
+    "title": "New project",
+    "fullscreen": false,
+    "resizable": true,
+
+    "sceneIDs": [
+        1
+    ],
+    "initialSceneID": 1,
+
+    "scenesPath": "scenes",
+    "meshesPath": "assets/meshes",
+    "texturesPath": "textures",
+    "shadersPath": "shaders",
+    "scriptsPath": "scripts"
+}
