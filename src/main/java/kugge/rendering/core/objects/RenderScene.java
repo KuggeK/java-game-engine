@@ -1,32 +1,52 @@
 package kugge.rendering.core.objects;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.joml.Vector4f;
 
 import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.lights.PositionalLight;
+import kugge.rendering.core.objects.materials.Material;
 
 public class RenderScene {
     
+    private int ID;
+
     private Camera camera;
     private List<Mesh> meshes;
     private List<Instance> meshInstances;
+    private List<Material> materials;
+    private List<Texture> textures;
 
     private List<PositionalLight> positionalLights;
-    private Vector4f ambientLight;
+    private Vector4f globalAmbient;
     private DirectionalLight directionalLight;
 
-    public RenderScene(Camera camera, List<Mesh> meshes, List<Instance> meshInstances) {
+    public RenderScene(int ID, Camera camera, List<Mesh> meshes, List<Instance> meshInstances, List<Material> materials, List<Texture> textures, List<PositionalLight> positionalLights, Vector4f globalAmbient, DirectionalLight directionalLight) {
+        this.ID = ID;
         this.camera = camera;
         this.meshes = meshes;
         this.meshInstances = meshInstances;
-
-        positionalLights = List.of();
-        ambientLight = new Vector4f(0.5f);
-        directionalLight = new DirectionalLight();
+        this.materials = materials;
+        this.textures = textures;
+        this.positionalLights = positionalLights;
+        this.globalAmbient = globalAmbient;
+        this.directionalLight = directionalLight;
     }
 
+    public RenderScene(Camera camera, List<Mesh> meshes, List<Instance> meshInstances) {
+        this(-1, camera, meshes, meshInstances, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Vector4f(0.1f), new DirectionalLight());
+    }
+
+    public int getID() {
+        return ID;
+    }
+
+    public void setID(int iD) {
+        ID = iD;
+    }
+    
     public Camera getCamera() {
         return camera;
     }
@@ -43,12 +63,28 @@ public class RenderScene {
         this.meshes = meshes;
     }
 
+    public List<Material> getMaterials() {
+        return materials;
+    }
+
+    public void setMaterials(List<Material> materials) {
+        this.materials = materials;
+    }
+
     public List<Instance> getInstances() {
         return meshInstances;
     }
 
     public void setInstances(List<Instance> meshInstances) {
         this.meshInstances = meshInstances;
+    }
+
+    public List<Texture> getTextures() {
+        return textures;
+    }
+
+    public void setTextures(List<Texture> textures) {
+        this.textures = textures;
     }
 
     public List<PositionalLight> getPositionalLights() {
@@ -59,16 +95,16 @@ public class RenderScene {
         this.positionalLights = positionalLights;
     }
 
-    public Vector4f getAmbientLight() {
-        return ambientLight;
+    public Vector4f getGlobalAmbient() {
+        return globalAmbient;
     }
 
-    public void setAmbientLight(float ambientLight) {
-        this.ambientLight.set(ambientLight);
+    public void setGlobalAmbient(float globalAmbient) {
+        this.globalAmbient.set(globalAmbient);
     }
 
-    public void setAmbientLight(Vector4f ambientLight) {
-        this.ambientLight.set(ambientLight);
+    public void setGlobalAmbient(Vector4f globalAmbient) {
+        this.globalAmbient.set(globalAmbient);
     }
 
     public DirectionalLight getDirectionalLight() {

@@ -1,20 +1,40 @@
 package kugge.rendering.core.objects;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import kugge.rendering.core.config.ProjectPaths;
+
 public class Texture {
     
+    private int ID;
+    private String fileName;
+
     private int width;
     private int height;
     private int[] pixels;
 
-    public Texture(int width, int height, int[] pixels) {
+    public Texture(int ID, String fileName, int width, int height, int[] pixels) {
+        this.ID = ID;
+        this.fileName = fileName;
         this.width = width;
         this.height = height;
         this.pixels = pixels;
+    }
+
+    public Texture(int width, int height, int[] pixels) {
+        this(-1, null, width, height, pixels);
+    }
+
+    public int getID() {
+        return ID;
+    }
+
+    public String getFileName() {
+        return fileName;
     }
 
     public int getWidth() {
@@ -27,6 +47,14 @@ public class Texture {
 
     public int[] getPixels() {
         return pixels;
+    }
+    
+    public void setID(int ID) {
+        this.ID = ID;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 
     public void setPixels(int[] pixels) {
@@ -42,7 +70,7 @@ public class Texture {
     }
 
     public static Texture loadTexture(String path) throws IOException {
-        BufferedImage image = ImageIO.read(Texture.class.getResource(path));
+        BufferedImage image = ImageIO.read(new File(ProjectPaths.getTexturePath(path)));
         int width = image.getWidth();
         int height = image.getHeight();
         int[] pixels = new int[width * height];

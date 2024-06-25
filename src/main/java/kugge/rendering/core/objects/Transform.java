@@ -1,5 +1,7 @@
 package kugge.rendering.core.objects;
 
+import java.util.logging.Logger;
+
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -9,17 +11,20 @@ public class Transform {
     private Vector3f position;
     private Quaternionf rotation;
     private Vector3f scale;
+    private Vector3f helperVector;
 
     private Matrix4f modelMatrix;
     private boolean modelMatrixChanged;
+
+    private transient Logger logger = Logger.getLogger(Transform.class.getName());
 
     public Transform() {
         position = new Vector3f();
         rotation = new Quaternionf();
         scale = new Vector3f();
+        helperVector = new Vector3f();
         modelMatrix = new Matrix4f();
         modelMatrixChanged = true;
-        getModelMatrix();
     }
 
     public void setPosition(float x, float y, float z) {
@@ -37,8 +42,27 @@ public class Transform {
         modelMatrixChanged = true;
     }
 
+    public void setPosition(float[] position) {
+        this.position.set(position[0], position[1], position[2]);
+    }
+
     public void setRotation(float x, float y, float z) {
         rotation.identity().rotateXYZ(x, y, z);
+        modelMatrixChanged = true;
+    }
+
+    public void setRotation(Vector3f rotation) {
+        this.rotation.identity().rotateXYZ(rotation.x, rotation.y, rotation.z);
+        modelMatrixChanged = true;
+    }
+
+    public void setRotation(Quaternionf rotation) {
+        this.rotation.set(rotation);
+        modelMatrixChanged = true;
+    }
+
+    public void setRotation(float[] rotation) {
+        this.rotation.set(rotation[0], rotation[1], rotation[2], rotation[3]);
         modelMatrixChanged = true;
     }
 
@@ -75,6 +99,23 @@ public class Transform {
     public void scale(Vector3f scale) {
         this.scale.mul(scale);
         modelMatrixChanged = true;
+    }
+
+    /**
+     * Moves the object towards the specified direction by the specified distance
+     * @param xDir
+     * @param yDir
+     * @param zDir
+     * @param distance
+     */
+    public void moveTowards(Vector3f direction, float distance) {
+        helperVector.set(direction).normalize().mul(distance);
+        position.add(helperVector);
+        modelMatrixChanged = true;
+    }
+
+    public void moveTowards(float xDir, float yDir, float zDir, float distance) {
+        moveTowards(new Vector3f(xDir, yDir, zDir), distance);
     }
 
     public Vector3f getForward() {

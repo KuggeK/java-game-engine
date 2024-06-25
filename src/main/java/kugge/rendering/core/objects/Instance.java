@@ -1,10 +1,8 @@
 package kugge.rendering.core.objects;
 
-import kugge.rendering.core.objects.materials.Material;
-
 /**
  * Represents an instance of a mesh. Links to the mesh by ID. Defines a position, 
- * rotation, scale and material for this instance of the mesh.
+ * rotation, scale and materialID for this instance of the mesh.
  */
 public class Instance {
     /**
@@ -18,31 +16,31 @@ public class Instance {
     private Transform transform;
 
     /**
-     * The material of this instance
+     * The materialID of this instance
      */
-    private Material material;
+    private int materialID;
 
     private int textureIndex = -1;
 
-    public Instance(int meshID, float[] position, float[] rotation, float[] scale, Material material) {
+    public Instance(int meshID, float[] position, float[] rotation, float[] scale, int materialID) {
         this.meshID = meshID;
         this.transform = new Transform();
         this.transform.setPosition(position[0], position[1], position[2]);
         this.transform.setRotation(rotation[0], rotation[1], rotation[2]);
         this.transform.setScale(scale[0], scale[1], scale[2]);
-        this.material = material;
+        this.materialID = materialID;
     }
 
     public Instance(int meshID) {
         this.meshID = meshID;
         this.transform = new Transform();
-        this.material = null;
+        this.materialID = -1;
     }
 
-    public Instance(int meshID, Material material) {
+    public Instance(int meshID, int materialID) {
         this.meshID = meshID;
         this.transform = new Transform();
-        this.material = material;
+        this.materialID = materialID;
     }
 
     public int getMeshID() {
@@ -53,12 +51,12 @@ public class Instance {
         return transform;
     }
 
-    public Material getMaterial() {
-        return material;
+    public int getMaterialID() {
+        return materialID;
     }
 
-    public void setMaterial(Material material) {
-        this.material = material;
+    public void setMaterialID(int materialID) {
+        this.materialID = materialID;
     }
 
     public int getTextureIndex() {

@@ -1,6 +1,7 @@
 package kugge.rendering.core.objects;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,14 +13,14 @@ import kugge.rendering.core.objects.materials.Materials;
  */
 public class Mesh {
     // Unique identifier    
-    private int id;
+    private int ID;
 
     // Vertex attributes
     private float[] positions;
     private float[] textureCoords;
     private float[] normals;
 
-    // Indices of attributes. The index matches the position, texture coordinate, and normal of the vertex.
+    // Indices of attributes. The index matches the position, textureID coordinate, and normal of the vertex.
     private int[] indices;
 
     private int numVertices;
@@ -29,18 +30,20 @@ public class Mesh {
     // set instance mat to default material (in Materials.java in this package).
     private Material material;
 
-    /**
-     * Textures that can be applied to the mesh. Can be empty. These textures should all
-     * be the same size and have the same properties.
-     */
-    private List<Texture> textures = new ArrayList<>();
+    private String fileName;
 
     /**
-     * Texture parameters for the textures. Can be empty.
+     * Textures that can be applied to the mesh. Can be empty. These textureIDs should all
+     * be the same size and have the same properties.
+     */
+    private List<Integer> textureIDs = new ArrayList<>();
+
+    /**
+     * Texture parameters for the textureIDs. Can be empty.
      */
     private Map<Integer, Integer> textureParameters;
 
-    public Mesh(int id, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, List<Texture> textures, Map<Integer, Integer> textureParameters) {
+    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, List<Integer> textureIDs, Map<Integer, Integer> textureParameters, String fileName) {
         if (positions.length % 3 != 0) {
             throw new IllegalArgumentException("Positions array must have a length that is a multiple of 3");
         }
@@ -56,34 +59,35 @@ public class Mesh {
         if (textureCoords.length / 2 != positions.length / 3) {
             throw new IllegalArgumentException("Texture coordinates must be defined for each vertex!");
         }
-
-        this.id = id;
+        this.ID = ID;
         this.positions = positions;
         this.textureCoords = textureCoords;
         this.normals = normals;
         this.indices = indices;
         this.material = material;
-        this.textures = textures;
+        this.textureIDs = textureIDs;
         this.textureParameters = textureParameters;
 
         this.numVertices = positions.length / 3;
         this.numIndices = indices.length;
+
+        this.fileName = fileName;
     }
 
-    public Mesh(int id, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material) {
-        this(id, positions, textureCoords, normals, indices, material, new ArrayList<>(), Map.of());
+    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material) {
+        this(ID, positions, textureCoords, normals, indices, material, new ArrayList<>(), new HashMap<>(), null);
     }
 
-    public Mesh(int id, float[] positions, float[] textureCoords, float[] normals, int[] indices) {
-        this(id, positions, textureCoords, normals, indices, Materials.DEFAULT);
+    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices) {
+        this(ID, positions, textureCoords, normals, indices, Materials.DEFAULT);
     }
 
-    public int getId() {
-        return id;
+    public int getID() {
+        return ID;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setID(int ID) {
+        this.ID = ID;
     }
 
     public int getNumVertices() {
@@ -142,28 +146,28 @@ public class Mesh {
         this.material = material;
     }
 
-    public List<Texture> getTextures() {
-        return textures;
+    public List<Integer> getTextureIDs() {
+        return textureIDs;
     }
 
-    public void setTextures(List<Texture> textures) {
-        this.textures = textures;
+    public void setTextureIDs(List<Integer> textureIDs) {
+        this.textureIDs = textureIDs;
     }
 
-    public void addTexture(Texture texture) {
-        textures.add(texture);
+    public void addTexture(Integer textureID) {
+        textureIDs.add(textureID);
     }
 
-    public void removeTexture(Texture texture) {
-        textures.remove(texture);
+    public void removeTexture(Integer textureID) {
+        textureIDs.remove(textureID);
     }
 
     public void removeTexture(int index) {
-        textures.remove(index);
+        textureIDs.remove(index);
     }
 
     public void clearTextures() {
-        textures.clear();
+        textureIDs.clear();
     }
 
     public Map<Integer, Integer> getTextureParameters() {
@@ -172,5 +176,13 @@ public class Mesh {
 
     public void setTextureParameters(Map<Integer, Integer> textureParameters) {
         this.textureParameters = textureParameters;
+    }
+    
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 }

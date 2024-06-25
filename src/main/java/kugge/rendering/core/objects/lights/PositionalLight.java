@@ -1,10 +1,10 @@
 package kugge.rendering.core.objects.lights;
 
-import org.joml.Vector4f;
+import org.joml.Vector3f;
 
 public class PositionalLight extends Light {
 
-    private Vector4f position;
+    private Vector3f position;
     private float constant;
     private float linear;
     private float quadratic;
@@ -12,18 +12,18 @@ public class PositionalLight extends Light {
 
     public PositionalLight(float[] ambient, float[] diffuse, float[] specular, float[] position) {
         super(ambient, diffuse, specular);
-        this.position = new Vector4f(position);
+        this.position = new Vector3f(position);
         constant = 1.0f;
         linear = 0.09f;
         quadratic = 0.032f;
         radius = 10.0f;
     }
 
-    public Vector4f getPosition() {
+    public Vector3f getPosition() {
         return position;
     }
 
-    public void setPosition(Vector4f position) {
+    public void setPosition(Vector3f position) {
         this.position = position;
     }
     
