@@ -20,6 +20,8 @@ public class OpenGLWindow extends JFrame implements Window {
     private GLCanvas canvas;
     private Set<EventListener> listeners;
 
+    private boolean fullscreen = false;
+
     public OpenGLWindow() {
         this(DEFAULT_SETTINGS);
     }
@@ -47,8 +49,14 @@ public class OpenGLWindow extends JFrame implements Window {
     }
 
     private void updateSettings() {
-        this.setSize(settings.getWidth(), settings.getHeight());
+        if (settings.isFullscreen()) {
+            toggleFullscreen();
+            fullscreen = true;
+        } else {
+            this.setSize(settings.getWidth(), settings.getHeight());
+        }
         this.setTitle(settings.getTitle());
+        setResizable(settings.isResizable());
     }
 
     @Override
@@ -75,5 +83,20 @@ public class OpenGLWindow extends JFrame implements Window {
         }
         canvas.destroy();
         dispose();
+    }
+
+    @Override
+    public void toggleFullscreen() {
+        if (!settings.isResizable()) {
+            return;
+        }
+        
+        if (fullscreen) {
+            setExtendedState(JFrame.NORMAL);
+            fullscreen = false;
+        } else {
+            setExtendedState(JFrame.MAXIMIZED_BOTH);
+            fullscreen = true;
+        }
     }
 }

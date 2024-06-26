@@ -4,9 +4,11 @@ import java.util.EventListener;
 
 public interface Window {
     
-    public void setWindowSettings(WindowSettings settings);
+    void setWindowSettings(WindowSettings settings);
 
-    public void registerEventListener(EventListener listener);
+    void registerEventListener(EventListener listener);
 
-    public void destroy();
+    void destroy();
+
+    void toggleFullscreen();
 }

@@ -69,7 +69,26 @@ public class RenderingEngine {
             previousTime = currentTime;
 
             if (keyInput.isKeyPressed(KeyEvent.VK_ESCAPE)) {
-                break;
+                window.destroy();
+                System.exit(0);
+            }
+
+            if (keyInput.isKeyPressed(KeyEvent.VK_F11)) {
+                window.toggleFullscreen();
+            }
+
+            // Save the scene
+            if (keyInput.isKeyPressed(KeyEvent.VK_L)) {
+                if (keyInput.isKeyHeld(KeyEvent.VK_CONTROL)) {
+                    System.out.println("Saving scene");
+                    SceneStorage storage = new SceneStorageJSON();
+                    try {
+                        storage.saveScene(scene);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("Scene saved");
+                }
             }
 
             // Update
@@ -92,15 +111,5 @@ public class RenderingEngine {
                 }
             }
         }
-        window.destroy();
-
-        try {
-            SceneStorage storage = new SceneStorageJSON();
-            storage.saveScene(scene);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        System.exit(0);
     }
 }

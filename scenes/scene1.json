@@ -3,15 +3,15 @@
     "camera": {
         "transform": {
             "position": [
-                0.0,
-                0.0,
-                0.0
+                -2.9772558,
+                -0.69999987,
+                -11.164465
             ],
             "rotation": [
                 0.0,
+                0.9668697,
                 0.0,
-                0.0,
-                1.0
+                -0.25528225
             ],
             "scale": [
                 0.0,
@@ -25,12 +25,40 @@
     },
     "meshes": [
         {
+            "ID": 0,
+            "textureIDs": [],
+            "textureParameters": {}
+        },
+        {
             "ID": 1,
             "textureIDs": [],
             "textureParameters": {}
         }
     ],
     "meshInstances": [
+        {
+            "meshID": 0,
+            "materialID": 0,
+            "textureIndex": -1,
+            "transform": {
+                "position": [
+                    0.0,
+                    -2.0,
+                    -5.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "scale": [
+                    10.0,
+                    0.01,
+                    10.0
+                ]
+            }
+        },
         {
             "meshID": 1,
             "materialID": 0,
@@ -39,7 +67,7 @@
                 "position": [
                     0.0,
                     0.0,
-                    -5
+                    -5.0
                 ],
                 "rotation": [
                     0.0,
