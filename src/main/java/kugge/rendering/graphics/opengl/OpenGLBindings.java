@@ -148,9 +148,225 @@ public class OpenGLBindings implements GLEventListener {
 
         // Clear screen
         gl.glClear(GL_COLOR_BUFFER_BIT);
+        gl.glClear(GL_DEPTH_BUFFER_BIT);
 
-        // Setup normal shader program
+        // Upload mesh instance data to GPU
+        for (MeshData mesh : meshData) {
+            uploadMeshInstanceData(gl, mesh);
+        }
+
+        // Render shadow map
+        renderShadowMap(gl);
+        
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // Reset viewport
+        resizeViewPort(drawable);
+        gl.glClear(GL_DEPTH_BUFFER_BIT);
+        gl.glClear(GL_COLOR_BUFFER_BIT);
+        
+        // Render meshes
+        renderMeshes(gl);
+    
+        // Unbind VAO
+        gl.glBindVertexArray(0);
+        checkAndPrintError(gl, "Error in display method");
+    }
+
+    private void checkAndPrintError(GL4 gl, String message) {
+        int error = gl.glGetError();
+        if (error != GL_NO_ERROR) {
+            System.out.println(message + ": " + error);
+        }
+    }
+
+    /**
+     * Uploads mesh instance data to the GPU. This includes model matrices, material data and texture indices.
+     * Called every frame.
+     * @param gl The OpenGL context.
+     * @param mesh The mesh to upload data for.
+     */
+    private void uploadMeshInstanceData(GL4 gl, MeshData mesh) {
+        // Buffer all mesh instance data to the GPU
+        FloatBuffer modelMxBuffer = Buffers.newDirectFloatBuffer(meshInstances.get(mesh.id).size() * 16);
+        FloatBuffer materialBuffer = Buffers.newDirectFloatBuffer(13 * meshInstances.get(mesh.id).size());
+        int[] textureIndices = new int[meshInstances.get(mesh.id).size()];
+
+        for (int i = 0; i < meshInstances.get(mesh.id).size(); ++i) {
+            Instance instance = meshInstances.get(mesh.id).get(i);
+            // Put model matrix into buffer
+            instance.getTransform().getModelMatrix().get(i*16, modelMxBuffer);
+
+            // Get material data
+            Material material = materials.get(instance.getMaterialID());
+            if (material == null) {
+                material = mesh.material;
+            }
+            material.ambient().get(i*13, materialBuffer);
+            material.diffuse().get(i*13 + 4, materialBuffer);
+            material.specular().get(i*13 + 8, materialBuffer);
+            materialBuffer.put(i*13 + 12, material.shininess());
+
+            // Get texture index
+            textureIndices[i] = instance.getTextureIndex();
+        }
+
+        // Bind model matrix buffer and send model matrices to GPU
+        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[mesh.VBOi + MODEL_MATRIX_VBO]);
+        gl.glBufferData(GL_ARRAY_BUFFER, modelMxBuffer.limit() * Float.BYTES, modelMxBuffer, GL_STATIC_DRAW);
+
+        // Bind material buffer and send data to GPU
+        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[mesh.VBOi + MATERIAL_VBO]);
+        gl.glBufferData(GL_ARRAY_BUFFER, materialBuffer.limit() * Float.BYTES, materialBuffer, GL_STATIC_DRAW);
+
+
+        // Bind texture index buffer and send data to GPU if the mesh has a texture array
+        IntBuffer textureIndicesBuffer;
+        if (mesh.textureArrayID != -1) {
+            textureIndicesBuffer = Buffers.newDirectIntBuffer(textureIndices);
+        } else {
+        // If the mesh does not have a texture array, fill the buffer with -1
+            int[] defaultIndices = new int[meshInstances.get(mesh.id).size()];
+            Arrays.fill(defaultIndices, -1);
+            textureIndicesBuffer = Buffers.newDirectIntBuffer(defaultIndices);
+        }
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[mesh.VBOi + TEXTURE_INDEX_VBO]);
+        gl.glBufferData(GL_ARRAY_BUFFER, textureIndicesBuffer.limit() * Integer.BYTES, textureIndicesBuffer, GL_STATIC_DRAW);
+    }
+
+    private void renderShadowMap(GL4 gl) {
+        gl.glUseProgram(shadowShaderProgram);
+
+        // Get shadow shader uniform and attribute locations
+        int lightSpaceMxLoc = gl.glGetUniformLocation(shadowShaderProgram, "lightSpaceMx");
+        int modelMxShadowLoc = gl.glGetAttribLocation(shadowShaderProgram, "modelMx");
+        int shadowPositionLoc = gl.glGetAttribLocation(shadowShaderProgram, "vPosition");
+
+        // Send light space matrix to shadow shader
+        gl.glUniformMatrix4fv(lightSpaceMxLoc, 1, false, lightSpaceMatrix.get(matrixVals));
+
+        // Set viewport to shadow map size and bind shadow map FBO. Cull front faces to avoid self-shadowing.
+        gl.glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        gl.glCullFace(GL_FRONT);
+        gl.glClear(GL_DEPTH_BUFFER_BIT);
+
+        // Render all meshes
+        for (MeshData mesh : meshData) {
+            List<Instance> instances = meshInstances.get(mesh.id);
+
+            // Skip if there are no instances of this mesh
+            if (instances == null || instances.size() == 0) {
+                continue;
+            }
+
+            int meshVBOIdx = mesh.VBOi;
+
+            // Setup model matrix attribute pointers to shadow shader
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MODEL_MATRIX_VBO]);
+            setupInstancedMat4Attribute(gl, modelMxShadowLoc);
+
+            // Set vertex position data to shadow shader
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + VERTEX_DATA_VBO]);
+            gl.glEnableVertexAttribArray(shadowPositionLoc);
+            gl.glVertexAttribPointer(shadowPositionLoc, 3, GL_FLOAT, false, 0, 0);
+
+            // Bind mesh index buffer and draw
+            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[meshVBOIdx + INDEX_DATA_VBO]);
+            gl.glDrawElementsInstanced(GL_TRIANGLES, mesh.numIndices, GL_UNSIGNED_INT, 0, instances.size());
+        }
+    }
+
+    private void renderMeshes(GL4 gl) {
+        gl.glCullFace(GL_BACK);
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
         gl.glUseProgram(shaderProgram);
+
+        // Set up render uniforms
+        setupRenderUniforms(gl);
+    
+        // Get attribute locations
+        int positionLoc = gl.glGetAttribLocation(shaderProgram, "vPosition");
+        int texCoordLoc = gl.glGetAttribLocation(shaderProgram, "vTextureCoord");
+        int normalLoc = gl.glGetAttribLocation(shaderProgram, "vNormal");
+        int modelMxLoc = gl.glGetAttribLocation(shaderProgram, "modelMx");
+
+        for (MeshData mesh : meshData) {
+            int meshVBOIdx = mesh.VBOi;
+
+            List<Instance> instances = meshInstances.get(mesh.id);
+
+            // Skip if there are no instances of this mesh
+            if (instances == null || instances.size() == 0) {
+                continue;
+            }
+
+            // Bind mesh vertex data buffer
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + VERTEX_DATA_VBO]);
+
+                // Set vertex position data to shader
+                gl.glEnableVertexAttribArray(positionLoc);
+                gl.glVertexAttribPointer(positionLoc, 3, GL_FLOAT, false, 0, 0);
+
+                // Set vertex texture coordinate data to shader
+                gl.glEnableVertexAttribArray(texCoordLoc);
+                gl.glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, false, 0, mesh.numVertices * 3 * Float.BYTES);
+                
+                // Set vertex normal data to shader
+                gl.glEnableVertexAttribArray(normalLoc);
+                gl.glVertexAttribPointer(normalLoc, 3, GL_FLOAT, false, 0, mesh.numVertices * 5 * Float.BYTES);
+        
+            // Bind model matrix buffer. 
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MODEL_MATRIX_VBO]);
+
+            // Setup model matrix attribute pointers
+            setupInstancedMat4Attribute(gl, modelMxLoc);
+        
+            // Bind material buffer and set material data to shader
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MATERIAL_VBO]);
+
+                // Set material data to shader
+                int ambientLoc = gl.glGetAttribLocation(shaderProgram, "materialAmbient");
+                int diffuseLoc = gl.glGetAttribLocation(shaderProgram, "materialDiffuse");
+                int specularLoc = gl.glGetAttribLocation(shaderProgram, "materialSpecular");
+                int shininessLoc = gl.glGetAttribLocation(shaderProgram, "materialShininess");
+
+                gl.glVertexAttribPointer(ambientLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 0);
+                gl.glEnableVertexAttribArray(ambientLoc);
+                gl.glVertexAttribDivisor(ambientLoc, 1);
+
+                gl.glVertexAttribPointer(diffuseLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 4 * Float.BYTES);
+                gl.glEnableVertexAttribArray(diffuseLoc);
+                gl.glVertexAttribDivisor(diffuseLoc, 1);
+
+                gl.glVertexAttribPointer(specularLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 8 * Float.BYTES);
+                gl.glEnableVertexAttribArray(specularLoc);
+                gl.glVertexAttribDivisor(specularLoc, 1);
+
+                gl.glVertexAttribPointer(shininessLoc, 1, GL_FLOAT, false, 13 * Float.BYTES, 12 * Float.BYTES);
+                gl.glEnableVertexAttribArray(shininessLoc);
+                gl.glVertexAttribDivisor(shininessLoc, 1);
+        
+            // Bind texture index information to shader
+            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + TEXTURE_INDEX_VBO]);
+            int textureIndexLoc = gl.glGetAttribLocation(shaderProgram, "textureIdx");
+            gl.glVertexAttribIPointer(textureIndexLoc, 1, GL_INT, 0, 0);
+            gl.glEnableVertexAttribArray(textureIndexLoc);
+            gl.glVertexAttribDivisor(textureIndexLoc, 1);
+        
+            // Bind shadow map
+            gl.glActiveTexture(GL_TEXTURE1);
+            gl.glBindTexture(GL_TEXTURE_2D, depthMapTexture);
+            gl.glUniform1i(gl.glGetUniformLocation(shaderProgram, "shadowMap"), 1);
+        
+            // Bind mesh index buffer and draw
+            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[meshVBOIdx + INDEX_DATA_VBO]);
+            gl.glDrawElementsInstanced(GL_TRIANGLES, mesh.numIndices, GL_UNSIGNED_INT, 0, instances.size());
+        }
+    }
+
+    private void setupRenderUniforms(GL4 gl) {
 
         // Get uniform locations
         int projectionMxLox = gl.glGetUniformLocation(shaderProgram, "projectionMx");
@@ -170,27 +386,27 @@ public class OpenGLBindings implements GLEventListener {
         // Set projection, view and normal matrices
         gl.glUniformMatrix4fv(projectionMxLox, 1, false, projectionMatrix.get(matrixVals));
         gl.glUniformMatrix4fv(viewMxLoc, 1, false, viewMatrix.get(matrixVals));
-
+    
         // Calculate and set light space matrix
         lightSpaceMatrix.identity().ortho(-10, 10, -10, 10, near, far);
         lightViewMatrix.identity().lookAt(new Vector3f().sub(directionalLight.getDirection()).mul(10), new Vector3f(0, 0, 0), new Vector3f(0, 1, 0));
         lightSpaceMatrix.mul(lightViewMatrix);
 
         gl.glUniformMatrix4fv(lightSpaceMxLoc, 1, false, lightSpaceMatrix.get(matrixVals));
-
+    
         // Set view position uniform
         inverseViewMatrix.set(viewMatrix).invert().getColumn(3, viewPos);
         gl.glUniform3fv(viewPosLoc, 1, viewPos.get(matrixVals));
-
+    
         // Set global ambient uniform
-        gl.glUniform3fv(globalAmbientLoc, 1, globalAmbient.get(matrixVals));
-
+        gl.glUniform4fv(globalAmbientLoc, 1, globalAmbient.get(matrixVals));
+    
         // Set directional light uniforms
         gl.glUniform4fv(dirLightAmbientLoc, 1, directionalLight.getAmbient().get(matrixVals));
         gl.glUniform4fv(dirLightDiffuseLoc, 1, directionalLight.getDiffuse().get(matrixVals));
         gl.glUniform4fv(dirLightSpecularLoc, 1, directionalLight.getSpecular().get(matrixVals));
         gl.glUniform3fv(dirLightDirectionLoc, 1, directionalLight.getDirection().get(matrixVals));
-
+    
         // Set positional light uniforms
         gl.glUniform1i(nLightsLoc, Math.min(MAX_N_LIGHTS, posLights.size()));
         for (int i = 0; i < posLights.size(); ++i) {
@@ -212,207 +428,10 @@ public class OpenGLBindings implements GLEventListener {
             gl.glUniform1f(quadraticLoc, light.getQuadratic());
             gl.glUniform1f(radiusLoc, light.getRadius());
         }
-
+    
         matrixVals.clear();
-
-        // Get attribute locations
-        int positionLoc = gl.glGetAttribLocation(shaderProgram, "vPosition");
-        int texCoordLoc = gl.glGetAttribLocation(shaderProgram, "vTextureCoord");
-        int normalLoc = gl.glGetAttribLocation(shaderProgram, "vNormal");
-        int modelMxLoc = gl.glGetAttribLocation(shaderProgram, "modelMx");
-
-        // Setup shadow shader program
-        gl.glUseProgram(shadowShaderProgram);
-
-        // Get shadow shader uniform and attribute locations
-        lightSpaceMxLoc = gl.glGetUniformLocation(shadowShaderProgram, "lightSpaceMx");
-        int modelMxShadowLoc = gl.glGetAttribLocation(shadowShaderProgram, "modelMx");
-        int shadowPositionLoc = gl.glGetAttribLocation(shadowShaderProgram, "vPosition");
-
-        // Send light space matrix to shadow shader
-        gl.glUniformMatrix4fv(lightSpaceMxLoc, 1, false, lightSpaceMatrix.get(matrixVals));
-
-
-        // ----------------- SHADOW MAP RENDERING -----------------
-        gl.glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-        gl.glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-        gl.glCullFace(GL_FRONT);
-        gl.glClear(GL_DEPTH_BUFFER_BIT);
-
-        // Render all meshes
-        for (MeshData mesh : meshData) {
-            List<Instance> instances = meshInstances.get(mesh.id);
-
-            // Skip if there are no instances of this mesh
-            if (instances == null || instances.size() == 0) {
-                continue;
-            }
-
-            // Get model matrices for each instance
-            FloatBuffer modelMxBuffer = Buffers.newDirectFloatBuffer(instances.size() * 16);
-            for (int j = 0; j < instances.size(); ++j) {
-                Instance instance = instances.get(j);
-                // Put model matrix into buffer
-                instance.getTransform().getModelMatrix().get(j*16, modelMxBuffer);
-            }
-
-            int meshVBOIdx = mesh.VBOi;
-
-            // Bind model matrix buffer and send model matrices to GPU
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MODEL_MATRIX_VBO]);
-            gl.glBufferData(GL_ARRAY_BUFFER, modelMxBuffer.limit() * Float.BYTES, modelMxBuffer, GL_STATIC_DRAW);
-
-            // Setup model matrix attribute pointers to shadow shader
-            setupInstancedMat4Attribute(gl, modelMxShadowLoc);
-
-            // Set vertex position data to shadow shader
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + VERTEX_DATA_VBO]);
-            gl.glEnableVertexAttribArray(shadowPositionLoc);
-            gl.glVertexAttribPointer(shadowPositionLoc, 3, GL_FLOAT, false, 0, 0);
-
-            // Bind mesh index buffer and draw
-            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[meshVBOIdx + INDEX_DATA_VBO]);
-            gl.glDrawElementsInstanced(GL_TRIANGLES, mesh.numIndices, GL_UNSIGNED_INT, 0, instances.size());
-        }
-        
-        // ----------------- NORMAL RENDERING -----------------
-        
-        gl.glCullFace(GL_BACK);
-        gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        // Reset viewport
-        resizeViewPort(drawable);
-        gl.glClear(GL_DEPTH_BUFFER_BIT);
-        gl.glClear(GL_COLOR_BUFFER_BIT);
-        
-        gl.glUseProgram(shaderProgram);
-        for (MeshData mesh : meshData) {
-
-            int meshVBOIdx = mesh.VBOi;
-
-            List<Instance> instances = meshInstances.get(mesh.id);
-
-            // Skip if there are no instances of this mesh
-            if (instances == null || instances.size() == 0) {
-                continue;
-            }
-
-            FloatBuffer modelMxBuffer = Buffers.newDirectFloatBuffer(instances.size() * 16);
-            FloatBuffer materialBuffer = Buffers.newDirectFloatBuffer(13 * instances.size());
-            int[] textureIndices = new int[instances.size()];
-            for (int j = 0; j < instances.size(); ++j) {
-                Instance instance = instances.get(j);
-                // Put model matrix into buffer
-                instance.getTransform().getModelMatrix().get(j*16, modelMxBuffer);
-
-                // Get material data
-                Material material = materials.get(instance.getMaterialID());
-                if (material == null) {
-                    material = mesh.material;
-                }
-                material.ambient().get(j*13, materialBuffer);
-                material.diffuse().get(j*13 + 4, materialBuffer);
-                material.specular().get(j*13 + 8, materialBuffer);
-                materialBuffer.put(j*13 + 12, material.shininess());
-
-                // Get texture index
-                textureIndices[j] = instance.getTextureIndex();
-            }
-
-
-            // Bind model matrix buffer and send model matrices to GPU
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MODEL_MATRIX_VBO]);
-            gl.glBufferData(GL_ARRAY_BUFFER, modelMxBuffer.limit() * Float.BYTES, modelMxBuffer, GL_STATIC_DRAW);
-
-            // Bind mesh vertex data buffer
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + VERTEX_DATA_VBO]);
-
-            // Set vertex position data to shader
-            gl.glEnableVertexAttribArray(positionLoc);
-            gl.glVertexAttribPointer(positionLoc, 3, GL_FLOAT, false, 0, 0);
-
-            // Set vertex texture coordinate data to shader
-            gl.glEnableVertexAttribArray(texCoordLoc);
-            gl.glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, false, 0, mesh.numVertices * 3 * Float.BYTES);
-            
-            // Set vertex normal data to shader
-            gl.glEnableVertexAttribArray(normalLoc);
-            gl.glVertexAttribPointer(normalLoc, 3, GL_FLOAT, false, 0, mesh.numVertices * 5 * Float.BYTES);
-
-            // Bind model matrix buffer. 
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MODEL_MATRIX_VBO]);
-
-            // Setup model matrix attribute pointers
-            setupInstancedMat4Attribute(gl, modelMxLoc);
-
-            // Bind material buffer and send data to GPU
-            gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MATERIAL_VBO]);
-            gl.glBufferData(GL_ARRAY_BUFFER, materialBuffer.limit() * Float.BYTES, materialBuffer, GL_STATIC_DRAW);
-
-            // Set material data to shader
-            int ambientLoc = gl.glGetAttribLocation(shaderProgram, "materialAmbient");
-            int diffuseLoc = gl.glGetAttribLocation(shaderProgram, "materialDiffuse");
-            int specularLoc = gl.glGetAttribLocation(shaderProgram, "materialSpecular");
-            int shininessLoc = gl.glGetAttribLocation(shaderProgram, "materialShininess");
-
-            gl.glVertexAttribPointer(ambientLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 0);
-            gl.glEnableVertexAttribArray(ambientLoc);
-            gl.glVertexAttribDivisor(ambientLoc, 1);
-
-            gl.glVertexAttribPointer(diffuseLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 4 * Float.BYTES);
-            gl.glEnableVertexAttribArray(diffuseLoc);
-            gl.glVertexAttribDivisor(diffuseLoc, 1);
-
-            gl.glVertexAttribPointer(specularLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 8 * Float.BYTES);
-            gl.glEnableVertexAttribArray(specularLoc);
-            gl.glVertexAttribDivisor(specularLoc, 1);
-
-            gl.glVertexAttribPointer(shininessLoc, 1, GL_FLOAT, false, 13 * Float.BYTES, 12 * Float.BYTES);
-            gl.glEnableVertexAttribArray(shininessLoc);
-            gl.glVertexAttribDivisor(shininessLoc, 1);
-
-
-            if (mesh.textureArrayID != -1) {
-                // Bind texture index buffer and send data to GPU
-                IntBuffer textureIndicesBuffer = Buffers.newDirectIntBuffer(textureIndices);
-                gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + TEXTURE_INDEX_VBO]);
-                gl.glBufferData(GL_ARRAY_BUFFER, textureIndicesBuffer.limit() * Integer.BYTES, textureIndicesBuffer, GL_STATIC_DRAW);
-
-                // Bind the texture array
-                gl.glActiveTexture(GL_TEXTURE0);
-                gl.glBindTexture(GL_TEXTURE_2D_ARRAY, mesh.textureArrayID);
-                gl.glUniform1i(gl.glGetUniformLocation(shaderProgram, "textureArray"), 0);
-            } else {
-                int[] defaultIndices = new int[instances.size()];
-                Arrays.fill(defaultIndices, -1);
-                IntBuffer textureIndicesBuffer = Buffers.newDirectIntBuffer(defaultIndices);
-                gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + TEXTURE_INDEX_VBO]);
-                gl.glBufferData(GL_ARRAY_BUFFER, textureIndicesBuffer.limit() * Integer.BYTES, textureIndicesBuffer, GL_STATIC_DRAW);
-            }
-            
-            // Bind texture index information to shader
-            int textureIndexLoc = gl.glGetAttribLocation(shaderProgram, "textureIdx");
-            gl.glVertexAttribIPointer(textureIndexLoc, 1, GL_INT, 0, 0);
-            gl.glEnableVertexAttribArray(textureIndexLoc);
-            gl.glVertexAttribDivisor(textureIndexLoc, 1);
-
-            // Bind shadow map
-            gl.glActiveTexture(GL_TEXTURE1);
-            gl.glBindTexture(GL_TEXTURE_2D, depthMapTexture);
-            gl.glUniform1i(gl.glGetUniformLocation(shaderProgram, "shadowMap"), 1);
-            
-            
-            // Bind mesh index buffer and draw
-            gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[meshVBOIdx + INDEX_DATA_VBO]);
-            gl.glDrawElementsInstanced(GL_TRIANGLES, mesh.numIndices, GL_UNSIGNED_INT, 0, instances.size());
-        }
-
-        // Unbind VAO
-        gl.glBindVertexArray(0);
-        int error = gl.glGetError();
-        if (error != GL_NO_ERROR) {
-            System.out.println("OpenGL error: " + error);
-        }
     }
+
 
     private void setupInstancedMat4Attribute(GL4 gl, int location) {
         for (int i = 0; i < 4; ++i) {
