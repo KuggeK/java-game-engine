@@ -25,6 +25,7 @@ import com.jogamp.opengl.GLEventListener;
 
 import kugge.rendering.core.objects.Instance;
 import kugge.rendering.core.objects.Mesh;
+import kugge.rendering.core.objects.SkyBox;
 import kugge.rendering.core.objects.Texture;
 import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.lights.PositionalLight;
@@ -63,7 +64,7 @@ public class OpenGLBindings implements GLEventListener {
 
     private final int MAX_N_LIGHTS = 50;
 
-    private int shaderProgram;
+    private int renderShaderProgram;
     private Shader[] shaders = new Shader[] {
         new Shader(GL_VERTEX_SHADER, "basic.vert"),
         new Shader(GL_FRAGMENT_SHADER, "basic.frag")
@@ -74,6 +75,18 @@ public class OpenGLBindings implements GLEventListener {
         new Shader(GL_VERTEX_SHADER, "shadow.vert"),
         new Shader(GL_FRAGMENT_SHADER,"shadow.frag")
     };
+
+    private int skyboxShaderProgram;
+    private Shader[] skyboxShaders = new Shader[] {
+        new Shader(GL_VERTEX_SHADER, "skybox.vert"),
+        new Shader(GL_FRAGMENT_SHADER, "skybox.frag")
+    };
+
+    private int skyboxVAO;
+    private int skyboxVBO;
+
+    private SkyBox skybox;
+    private int skyboxTextureID;
 
     private final int SHADOW_WIDTH = 1024;
     private final int SHADOW_HEIGHT = 1024;
@@ -114,8 +127,9 @@ public class OpenGLBindings implements GLEventListener {
         gl.glGenVertexArrays(VAO.length, VAO, 0);
 
         try {
-            shaderProgram = Shaders.loadShaders(shaders, gl);
+            renderShaderProgram = Shaders.loadShaders(shaders, gl);
             shadowShaderProgram = Shaders.loadShaders(shadowShaders, gl);
+            skyboxShaderProgram = Shaders.loadShaders(skyboxShaders, gl);
         } catch (Exception e) {
             e.printStackTrace();
             // TODO Handle exception
@@ -128,6 +142,11 @@ public class OpenGLBindings implements GLEventListener {
 
         // Set up depth map FBO
         setupDepthBuffer(gl);
+
+        // Set up skybox
+        if (skybox != null) {
+            setupSkybox(gl);
+        }
 
         // Configure depth test
         gl.glEnable(GL_DEPTH_TEST);
@@ -150,6 +169,10 @@ public class OpenGLBindings implements GLEventListener {
         gl.glClear(GL_COLOR_BUFFER_BIT);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
 
+        if (skybox != null) {
+            renderSkyBox(gl); 
+        }
+
         // Upload mesh instance data to GPU
         for (MeshData mesh : meshData) {
             uploadMeshInstanceData(gl, mesh);
@@ -162,7 +185,6 @@ public class OpenGLBindings implements GLEventListener {
         // Reset viewport
         resizeViewPort(drawable);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
-        gl.glClear(GL_COLOR_BUFFER_BIT);
         
         // Render meshes
         renderMeshes(gl);
@@ -186,6 +208,12 @@ public class OpenGLBindings implements GLEventListener {
      * @param mesh The mesh to upload data for.
      */
     private void uploadMeshInstanceData(GL4 gl, MeshData mesh) {
+
+        List<Instance> instances = meshInstances.get(mesh.id);
+        if (instances == null || instances.size() == 0) {
+            return;
+        }
+
         // Buffer all mesh instance data to the GPU
         FloatBuffer modelMxBuffer = Buffers.newDirectFloatBuffer(meshInstances.get(mesh.id).size() * 16);
         FloatBuffer materialBuffer = Buffers.newDirectFloatBuffer(13 * meshInstances.get(mesh.id).size());
@@ -281,16 +309,16 @@ public class OpenGLBindings implements GLEventListener {
         gl.glCullFace(GL_BACK);
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        gl.glUseProgram(shaderProgram);
+        gl.glUseProgram(renderShaderProgram);
 
         // Set up render uniforms
         setupRenderUniforms(gl);
     
         // Get attribute locations
-        int positionLoc = gl.glGetAttribLocation(shaderProgram, "vPosition");
-        int texCoordLoc = gl.glGetAttribLocation(shaderProgram, "vTextureCoord");
-        int normalLoc = gl.glGetAttribLocation(shaderProgram, "vNormal");
-        int modelMxLoc = gl.glGetAttribLocation(shaderProgram, "modelMx");
+        int positionLoc = gl.glGetAttribLocation(renderShaderProgram, "vPosition");
+        int texCoordLoc = gl.glGetAttribLocation(renderShaderProgram, "vTextureCoord");
+        int normalLoc = gl.glGetAttribLocation(renderShaderProgram, "vNormal");
+        int modelMxLoc = gl.glGetAttribLocation(renderShaderProgram, "modelMx");
 
         for (MeshData mesh : meshData) {
             int meshVBOIdx = mesh.VBOi;
@@ -327,10 +355,10 @@ public class OpenGLBindings implements GLEventListener {
             gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + MATERIAL_VBO]);
 
                 // Set material data to shader
-                int ambientLoc = gl.glGetAttribLocation(shaderProgram, "materialAmbient");
-                int diffuseLoc = gl.glGetAttribLocation(shaderProgram, "materialDiffuse");
-                int specularLoc = gl.glGetAttribLocation(shaderProgram, "materialSpecular");
-                int shininessLoc = gl.glGetAttribLocation(shaderProgram, "materialShininess");
+                int ambientLoc = gl.glGetAttribLocation(renderShaderProgram, "materialAmbient");
+                int diffuseLoc = gl.glGetAttribLocation(renderShaderProgram, "materialDiffuse");
+                int specularLoc = gl.glGetAttribLocation(renderShaderProgram, "materialSpecular");
+                int shininessLoc = gl.glGetAttribLocation(renderShaderProgram, "materialShininess");
 
                 gl.glVertexAttribPointer(ambientLoc, 4, GL_FLOAT, false, 13 * Float.BYTES, 0);
                 gl.glEnableVertexAttribArray(ambientLoc);
@@ -350,7 +378,7 @@ public class OpenGLBindings implements GLEventListener {
         
             // Bind texture index information to shader
             gl.glBindBuffer(GL_ARRAY_BUFFER, VBOs[meshVBOIdx + TEXTURE_INDEX_VBO]);
-            int textureIndexLoc = gl.glGetAttribLocation(shaderProgram, "textureIdx");
+            int textureIndexLoc = gl.glGetAttribLocation(renderShaderProgram, "textureIdx");
             gl.glVertexAttribIPointer(textureIndexLoc, 1, GL_INT, 0, 0);
             gl.glEnableVertexAttribArray(textureIndexLoc);
             gl.glVertexAttribDivisor(textureIndexLoc, 1);
@@ -358,80 +386,133 @@ public class OpenGLBindings implements GLEventListener {
             // Bind shadow map
             gl.glActiveTexture(GL_TEXTURE1);
             gl.glBindTexture(GL_TEXTURE_2D, depthMapTexture);
-            gl.glUniform1i(gl.glGetUniformLocation(shaderProgram, "shadowMap"), 1);
+            gl.glUniform1i(gl.glGetUniformLocation(renderShaderProgram, "shadowMap"), 1);
         
             // Bind mesh index buffer and draw
             gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOs[meshVBOIdx + INDEX_DATA_VBO]);
             gl.glDrawElementsInstanced(GL_TRIANGLES, mesh.numIndices, GL_UNSIGNED_INT, 0, instances.size());
         }
     }
+    
+    private void renderSkyBox(GL4 gl) {
+        gl.glDepthMask(false);
 
-    private void setupRenderUniforms(GL4 gl) {
+        gl.glUseProgram(skyboxShaderProgram);
+        gl.glBindVertexArray(skyboxVAO);
 
-        // Get uniform locations
-        int projectionMxLox = gl.glGetUniformLocation(shaderProgram, "projectionMx");
-        int viewMxLoc = gl.glGetUniformLocation(shaderProgram, "viewMx");
-        int lightSpaceMxLoc = gl.glGetUniformLocation(shaderProgram, "lightSpaceMx");
+        int viewMxLoc = gl.glGetUniformLocation(skyboxShaderProgram, "viewMx");
+        int projectionMxLoc = gl.glGetUniformLocation(skyboxShaderProgram, "projectionMx");
+        int positionLoc = gl.glGetAttribLocation(skyboxShaderProgram, "vPosition");
 
-        int viewPosLoc = gl.glGetUniformLocation(shaderProgram, "viewPos");
-        int globalAmbientLoc = gl.glGetUniformLocation(shaderProgram, "globalAmbient");
-
-        int dirLightAmbientLoc = gl.glGetUniformLocation(shaderProgram, "dirLight.ambient");
-        int dirLightDiffuseLoc = gl.glGetUniformLocation(shaderProgram, "dirLight.diffuse");
-        int dirLightSpecularLoc = gl.glGetUniformLocation(shaderProgram, "dirLight.specular");
-        int dirLightDirectionLoc = gl.glGetUniformLocation(shaderProgram, "dirLight.direction");
-
-        int nLightsLoc = gl.glGetUniformLocation(shaderProgram, "nLights");
-
-        // Set projection, view and normal matrices
-        gl.glUniformMatrix4fv(projectionMxLox, 1, false, projectionMatrix.get(matrixVals));
         gl.glUniformMatrix4fv(viewMxLoc, 1, false, viewMatrix.get(matrixVals));
-    
-        // Calculate and set light space matrix
-        lightSpaceMatrix.identity().ortho(-10, 10, -10, 10, near, far);
-        lightViewMatrix.identity().lookAt(new Vector3f().sub(directionalLight.getDirection()).mul(10), new Vector3f(0, 0, 0), new Vector3f(0, 1, 0));
-        lightSpaceMatrix.mul(lightViewMatrix);
+        gl.glUniformMatrix4fv(projectionMxLoc, 1, false, projectionMatrix.get(matrixVals));
 
-        gl.glUniformMatrix4fv(lightSpaceMxLoc, 1, false, lightSpaceMatrix.get(matrixVals));
-    
-        // Set view position uniform
-        inverseViewMatrix.set(viewMatrix).invert().getColumn(3, viewPos);
-        gl.glUniform3fv(viewPosLoc, 1, viewPos.get(matrixVals));
-    
-        // Set global ambient uniform
-        gl.glUniform4fv(globalAmbientLoc, 1, globalAmbient.get(matrixVals));
-    
-        // Set directional light uniforms
-        gl.glUniform4fv(dirLightAmbientLoc, 1, directionalLight.getAmbient().get(matrixVals));
-        gl.glUniform4fv(dirLightDiffuseLoc, 1, directionalLight.getDiffuse().get(matrixVals));
-        gl.glUniform4fv(dirLightSpecularLoc, 1, directionalLight.getSpecular().get(matrixVals));
-        gl.glUniform3fv(dirLightDirectionLoc, 1, directionalLight.getDirection().get(matrixVals));
-    
-        // Set positional light uniforms
-        gl.glUniform1i(nLightsLoc, Math.min(MAX_N_LIGHTS, posLights.size()));
-        for (int i = 0; i < posLights.size(); ++i) {
-            PositionalLight light = posLights.get(i);
-            int ambientLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].ambient");
-            int diffuseLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].diffuse");
-            int specularLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].specular");
-            int positionLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].position");
-            int constantLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].attenuation.constant");
-            int linearLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].attenuation.linear");
-            int quadraticLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].attenuation.quadratic");
-            int radiusLoc = gl.glGetUniformLocation(shaderProgram, "posLights[" + i + "].attenuation.radius");
-            gl.glUniform4fv(ambientLoc, 1, light.getAmbient().get(matrixVals));
-            gl.glUniform4fv(diffuseLoc, 1, light.getDiffuse().get(matrixVals));
-            gl.glUniform4fv(specularLoc, 1, light.getSpecular().get(matrixVals));
-            gl.glUniform4fv(positionLoc, 1, light.getPosition().get(matrixVals));
-            gl.glUniform1f(constantLoc, light.getConstant());
-            gl.glUniform1f(linearLoc, light.getLinear());
-            gl.glUniform1f(quadraticLoc, light.getQuadratic());
-            gl.glUniform1f(radiusLoc, light.getRadius());
-        }
-    
-        matrixVals.clear();
+        gl.glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+        gl.glEnableVertexAttribArray(positionLoc);
+        gl.glVertexAttribPointer(positionLoc, 3, GL_FLOAT, false, 0, 0);
+
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTextureID);
+
+        gl.glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        gl.glDepthMask(true);
+        gl.glCullFace(GL_BACK);
     }
 
+    private final float[] skyboxVertices = new float[] {
+        // positions          
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        1.0f,  1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f
+    };
+    
+    private void setupSkybox(GL4 gl) {
+        int[] IDs = new int[1];
+        gl.glGenVertexArrays(1, IDs, 0);
+        skyboxVAO = IDs[0];
+
+        gl.glGenBuffers(1, IDs, 0);
+        skyboxVBO = IDs[0];
+
+        gl.glBindVertexArray(skyboxVAO);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+        FloatBuffer skyboxBuffer = Buffers.newDirectFloatBuffer(skyboxVertices);
+        gl.glBufferData(GL_ARRAY_BUFFER, skyboxBuffer.limit() * Float.BYTES, skyboxBuffer, GL_STATIC_DRAW);
+
+        int positionLoc = gl.glGetAttribLocation(skyboxShaderProgram, "vPosition");
+        gl.glEnableVertexAttribArray(positionLoc);
+        gl.glVertexAttribPointer(positionLoc, 3, GL_FLOAT, false, 0, 0);
+
+        int[] textureIDs = new int[6];
+        gl.glGenTextures(1, textureIDs, 0);
+        skyboxTextureID = textureIDs[0];
+        gl.glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTextureID);
+        
+        gl.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, skybox.getTextureSize(), skybox.getTextureSize());
+
+        var textureTargets = List.of(
+            GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+            GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+        );
+
+        for (int i = 0; i < 6; ++i) {
+            gl.glTexSubImage2D(
+                textureTargets.get(i), 
+                0, 0, 0, 
+                skybox.getTextureSize(), skybox.getTextureSize(), 
+                GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, 
+                Buffers.newDirectIntBuffer(skybox.getTexture(i).getPixels()));
+        }
+
+        gl.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        gl.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        gl.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        gl.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        gl.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+        gl.glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+    }
 
     private void setupInstancedMat4Attribute(GL4 gl, int location) {
         for (int i = 0; i < 4; ++i) {
@@ -446,7 +527,7 @@ public class OpenGLBindings implements GLEventListener {
         GL4 gl = drawable.getGL().getGL4();
         clearVBOs(gl);
         gl.glDeleteVertexArrays(1, VAO, 0);
-        gl.glDeleteProgram(shaderProgram);
+        gl.glDeleteProgram(renderShaderProgram);
     }
 
     @Override
@@ -587,6 +668,72 @@ public class OpenGLBindings implements GLEventListener {
         }
     }   
 
+    private void setupRenderUniforms(GL4 gl) {
+
+        // Get uniform locations
+        int projectionMxLox = gl.glGetUniformLocation(renderShaderProgram, "projectionMx");
+        int viewMxLoc = gl.glGetUniformLocation(renderShaderProgram, "viewMx");
+        int lightSpaceMxLoc = gl.glGetUniformLocation(renderShaderProgram, "lightSpaceMx");
+
+        int viewPosLoc = gl.glGetUniformLocation(renderShaderProgram, "viewPos");
+        int globalAmbientLoc = gl.glGetUniformLocation(renderShaderProgram, "globalAmbient");
+
+        int dirLightAmbientLoc = gl.glGetUniformLocation(renderShaderProgram, "dirLight.ambient");
+        int dirLightDiffuseLoc = gl.glGetUniformLocation(renderShaderProgram, "dirLight.diffuse");
+        int dirLightSpecularLoc = gl.glGetUniformLocation(renderShaderProgram, "dirLight.specular");
+        int dirLightDirectionLoc = gl.glGetUniformLocation(renderShaderProgram, "dirLight.direction");
+
+        int nLightsLoc = gl.glGetUniformLocation(renderShaderProgram, "nLights");
+
+        // Set projection, view and normal matrices
+        gl.glUniformMatrix4fv(projectionMxLox, 1, false, projectionMatrix.get(matrixVals));
+        gl.glUniformMatrix4fv(viewMxLoc, 1, false, viewMatrix.get(matrixVals));
+    
+        // Calculate and set light space matrix
+        lightSpaceMatrix.identity().ortho(-10, 10, -10, 10, near, far);
+        lightViewMatrix.identity().lookAt(new Vector3f().sub(directionalLight.getDirection()).mul(10), new Vector3f(0, 0, 0), new Vector3f(0, 1, 0));
+        lightSpaceMatrix.mul(lightViewMatrix);
+
+        gl.glUniformMatrix4fv(lightSpaceMxLoc, 1, false, lightSpaceMatrix.get(matrixVals));
+    
+        // Set view position uniform
+        inverseViewMatrix.set(viewMatrix).invert().getColumn(3, viewPos);
+        gl.glUniform3fv(viewPosLoc, 1, viewPos.get(matrixVals));
+    
+        // Set global ambient uniform
+        gl.glUniform4fv(globalAmbientLoc, 1, globalAmbient.get(matrixVals));
+    
+        // Set directional light uniforms
+        gl.glUniform4fv(dirLightAmbientLoc, 1, directionalLight.getAmbient().get(matrixVals));
+        gl.glUniform4fv(dirLightDiffuseLoc, 1, directionalLight.getDiffuse().get(matrixVals));
+        gl.glUniform4fv(dirLightSpecularLoc, 1, directionalLight.getSpecular().get(matrixVals));
+        gl.glUniform3fv(dirLightDirectionLoc, 1, directionalLight.getDirection().get(matrixVals));
+    
+        // Set positional light uniforms
+        gl.glUniform1i(nLightsLoc, Math.min(MAX_N_LIGHTS, posLights.size()));
+        for (int i = 0; i < posLights.size(); ++i) {
+            PositionalLight light = posLights.get(i);
+            int ambientLoc = gl.glGetUniformLocation(renderShaderProgram, "posLights[" + i + "].ambient");
+            int diffuseLoc = gl.glGetUniformLocation(renderShaderProgram, "posLights[" + i + "].diffuse");
+            int specularLoc = gl.glGetUniformLocation(renderShaderProgram, "posLights[" + i + "].specular");
+            int positionLoc = gl.glGetUniformLocation(renderShaderProgram, "posLights[" + i + "].position");
+            int constantLoc = gl.glGetUniformLocation(renderShaderProgram, "posLights[" + i + "].attenuation.constant");
+            int linearLoc = gl.glGetUniformLocation(renderShaderProgram, "posLights[" + i + "].attenuation.linear");
+            int quadraticLoc = gl.glGetUniformLocation(renderShaderProgram, "posLights[" + i + "].attenuation.quadratic");
+            int radiusLoc = gl.glGetUniformLocation(renderShaderProgram, "posLights[" + i + "].attenuation.radius");
+            gl.glUniform4fv(ambientLoc, 1, light.getAmbient().get(matrixVals));
+            gl.glUniform4fv(diffuseLoc, 1, light.getDiffuse().get(matrixVals));
+            gl.glUniform4fv(specularLoc, 1, light.getSpecular().get(matrixVals));
+            gl.glUniform4fv(positionLoc, 1, light.getPosition().get(matrixVals));
+            gl.glUniform1f(constantLoc, light.getConstant());
+            gl.glUniform1f(linearLoc, light.getLinear());
+            gl.glUniform1f(quadraticLoc, light.getQuadratic());
+            gl.glUniform1f(radiusLoc, light.getRadius());
+        }
+    
+        matrixVals.clear();
+    }
+
     /**
      * Deletes all VBOs.
      * 
@@ -637,5 +784,9 @@ public class OpenGLBindings implements GLEventListener {
 
     public void setTextures(List<Texture> textures) {
         this.textures = textures;
+    }
+
+    public void setSkyBox(SkyBox skybox) {
+        this.skybox = skybox;
     }
 }

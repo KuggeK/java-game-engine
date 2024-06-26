@@ -23,7 +23,9 @@ public class RenderScene {
     private Vector4f globalAmbient;
     private DirectionalLight directionalLight;
 
-    public RenderScene(int ID, Camera camera, List<Mesh> meshes, List<Instance> meshInstances, List<Material> materials, List<Texture> textures, List<PositionalLight> positionalLights, Vector4f globalAmbient, DirectionalLight directionalLight) {
+    private SkyBox skyBox;
+
+    public RenderScene(int ID, Camera camera, List<Mesh> meshes, List<Instance> meshInstances, List<Material> materials, List<Texture> textures, List<PositionalLight> positionalLights, Vector4f globalAmbient, DirectionalLight directionalLight, SkyBox skyBox) {
         this.ID = ID;
         this.camera = camera;
         this.meshes = meshes;
@@ -33,10 +35,11 @@ public class RenderScene {
         this.positionalLights = positionalLights;
         this.globalAmbient = globalAmbient;
         this.directionalLight = directionalLight;
+        this.skyBox = skyBox;
     }
 
     public RenderScene(Camera camera, List<Mesh> meshes, List<Instance> meshInstances) {
-        this(-1, camera, meshes, meshInstances, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Vector4f(0.1f), new DirectionalLight());
+        this(-1, camera, meshes, meshInstances, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Vector4f(0.1f), new DirectionalLight(), null);
     }
 
     public int getID() {
@@ -113,5 +116,13 @@ public class RenderScene {
 
     public void setDirectionalLight(DirectionalLight directionalLight) {
         this.directionalLight = directionalLight;
+    }
+
+    public SkyBox getSkyBox() {
+        return skyBox;
+    }
+
+    public void setSkyBox(SkyBox skyBox) {
+        this.skyBox = skyBox;
     }
 }

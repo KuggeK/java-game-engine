@@ -19,6 +19,7 @@ public class OpenGLRenderer implements Renderer {
         this.scene = scene;
         bindings = new OpenGLBindings(scene.getMeshes(), scene.getMaterials());
         bindings.setTextures(scene.getTextures());
+        bindings.setSkyBox(scene.getSkyBox());
         renderThread = new Thread(renderRun); 
     }
 

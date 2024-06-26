@@ -69,12 +69,14 @@ public class Texture {
         this.height = height;
     }
 
-    public static Texture loadTexture(String path) throws IOException {
-        BufferedImage image = ImageIO.read(new File(ProjectPaths.getTexturePath(path)));
+    public static Texture loadTexture(String fileName) throws IOException {
+        BufferedImage image = ImageIO.read(new File(ProjectPaths.getTexturePath(fileName)));
         int width = image.getWidth();
         int height = image.getHeight();
         int[] pixels = new int[width * height];
         image.getRGB(0, 0, width, height, pixels, 0, width);
-        return new Texture(width, height, pixels);
+        Texture texture = new Texture(width, height, pixels);
+        texture.setFileName(fileName);
+        return texture;
     }
 }

@@ -5,8 +5,8 @@
     "projectAuthor": "",
 
     "targetFPS": 120,
-    "width": 1000,
-    "height": 720,
+    "width": 800,
+    "height": 600,
     "title": "New project",
     "fullscreen": false,
     "resizable": true,
@@ -18,7 +18,7 @@
 
     "scenesPath": "scenes",
     "meshesPath": "assets/meshes",
-    "texturesPath": "textures",
+    "texturesPath": "assets/textures",
     "shadersPath": "shaders",
     "scriptsPath": "scripts"
 }

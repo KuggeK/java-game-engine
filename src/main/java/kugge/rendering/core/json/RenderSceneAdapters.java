@@ -27,6 +27,7 @@ import kugge.rendering.core.objects.Instance;
 import kugge.rendering.core.objects.Mesh;
 import kugge.rendering.core.objects.Meshes;
 import kugge.rendering.core.objects.RenderScene;
+import kugge.rendering.core.objects.SkyBox;
 import kugge.rendering.core.objects.Texture;
 import kugge.rendering.core.objects.Transform;
 import kugge.rendering.core.objects.lights.DirectionalLight;
@@ -49,6 +50,7 @@ public class RenderSceneAdapters {
         builder.registerTypeAdapter(Mesh.class, new MeshAdapter(debugMode));
         builder.registerTypeAdapter(Texture.class, new TextureAdapter(debugMode));
         builder.registerTypeAdapter(RenderScene.class, new RenderSceneAdapter());
+        builder.registerTypeAdapter(SkyBox.class, new SkyBoxAdapter());
     }
 
     /**
@@ -105,9 +107,39 @@ public class RenderSceneAdapters {
             List<PositionalLight> positionalLights = deserializeArrayTo(PositionalLight.class, root.get("positionalLights").getAsJsonArray(), context);
             DirectionalLight directionalLight = context.deserialize(root.get("directionalLight"), DirectionalLight.class);
             Vector4f globalAmbient = context.deserialize(root.get("globalAmbient"), Vector4f.class);
+            SkyBox skyBox = context.deserialize(root.get("skyBox"), SkyBox.class);
         
-            RenderScene scene = new RenderScene(ID, camera, meshes, meshInstances, materials, textures, positionalLights, globalAmbient, directionalLight);
+            RenderScene scene = new RenderScene(ID, camera, meshes, meshInstances, materials, textures, positionalLights, globalAmbient, directionalLight, skyBox);
             return scene;
+        }
+
+    }
+
+    private static class SkyBoxAdapter implements JsonDeserializer<SkyBox>, JsonSerializer<SkyBox> {
+
+        @Override
+        public JsonElement serialize(SkyBox src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.add("right", context.serialize(src.getRight(), Texture.class));
+            jsonObject.add("left", context.serialize(src.getLeft(), Texture.class));
+            jsonObject.add("top", context.serialize(src.getTop(), Texture.class));
+            jsonObject.add("bottom", context.serialize(src.getBottom(), Texture.class));
+            jsonObject.add("front", context.serialize(src.getFront(), Texture.class));
+            jsonObject.add("back", context.serialize(src.getBack(), Texture.class));
+            return jsonObject;
+        }
+
+        @Override
+        public SkyBox deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                throws JsonParseException {
+            JsonObject root = json.getAsJsonObject();
+            Texture right = context.deserialize(root.get("right"), Texture.class);
+            Texture left = context.deserialize(root.get("left"), Texture.class);
+            Texture top = context.deserialize(root.get("top"), Texture.class);
+            Texture bottom = context.deserialize(root.get("bottom"), Texture.class);
+            Texture front = context.deserialize(root.get("front"), Texture.class);
+            Texture back = context.deserialize(root.get("back"), Texture.class);
+            return new SkyBox(right, left, top, bottom, front, back);
         }
 
     }
