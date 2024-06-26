@@ -42,18 +42,20 @@ uniform PositionalLight posLights[MAX_LIGHTS];
 uniform vec4 globalAmbient;
 uniform DirectionalLight dirLight;
 
-// Attributes passed by vertex shader
-// Material
-flat in vec4 matAmbient;
-flat in vec4 matDiffuse;
-flat in vec4 matSpecular;
-flat in float matShininess;
+in Material {
+    flat in vec4 ambient;
+    flat in vec4 diffuse;
+    flat in vec4 specular;
+    flat in float shininess;
+} material;
 
-// Interpolated attributes
-in vec2 varyingTexCoord;
-in vec3 worldNormal;
-in vec4 worldPosition;
-in vec4 fragPosLightSpace;
+// Varying means these will be interpolated.
+in Varying {
+    in vec2 texCoord;
+    in vec3 normal;
+    in vec4 position;
+    in vec4 posLightSpace;
+} coords;
 
 // Index into the texture array for instance's texture.
 flat in int flatTextureIdx;
@@ -65,22 +67,22 @@ float CalculateShadow();
 
 void main() {
     // The N vector needs to be normalized after interpolation.
-    vec3 N = normalize(worldNormal);
-    vec3 V = normalize(viewPos - worldPosition.xyz);
+    vec3 N = normalize(coords.normal);
+    vec3 V = normalize(viewPos - coords.position.xyz);
 
     // Texture contribution
     vec4 textureColor;
     if (flatTextureIdx == -1) {
         textureColor = vec4(1.0);
     } else {
-        textureColor = texture(textureArray, vec3(varyingTexCoord, flatTextureIdx));
+        textureColor = texture(textureArray, vec3(coords.texCoord, flatTextureIdx));
     }
 
     // Calculate the value of the contribution of all lights
     vec4 lightColor = vec4(0.0, 0.0, 0.0, 0.0);
 
     // Global ambient contribution
-    lightColor += globalAmbient * matAmbient;
+    lightColor += globalAmbient * material.ambient;
 
     float shadow = CalculateShadow();
 
@@ -91,7 +93,7 @@ void main() {
     // Positional light contribution
     Light posContribution;
     for (int i = 0; i < nLights && i < MAX_LIGHTS; ++i) {
-        posContribution = CalculatePosLight(posLights[i], worldPosition, N, V);
+        posContribution = CalculatePosLight(posLights[i], coords.position, N, V);
         lightColor += posContribution.ambient + posContribution.diffuse + posContribution.diffuse;
     }
     
@@ -99,12 +101,12 @@ void main() {
 }
 
 float CalculateShadow() {
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    vec3 projCoords = coords.posLightSpace.xyz / coords.posLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
 
     float currentDepth = projCoords.z;
 
-    float bias = 0.00025;
+    float bias = 0.00005;
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
 
@@ -129,15 +131,15 @@ Light BlinnPhongShading(vec3 L, vec3 N, vec3 V) {
     vec3 H = normalize(L + V);
 
     // Ambient.
-    vec4 ambient = matAmbient;
+    vec4 ambient = material.ambient;
 
     // Diffuse. Angle between the light direction and the fragment normal.
     float diffAmount = max(dot(N, L), 0.0);
-    vec4 diffuse = matDiffuse * diffAmount;
+    vec4 diffuse = material.diffuse * diffAmount;
 
     // Specular (Phong). Angle between the direction to the view and the reflection vector to the power of the material shininess.
-    float specAmount = pow(max(dot(N, H), 0.0), matShininess);
-    vec4 specular = matSpecular * specAmount;
+    float specAmount = pow(max(dot(N, H), 0.0), material.shininess);
+    vec4 specular = material.specular * specAmount;
 
     return Light(ambient, diffuse, specular);
 }

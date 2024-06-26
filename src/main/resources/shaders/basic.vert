@@ -22,36 +22,40 @@ layout(location = 11) in float materialShininess;
 
 // Out values for fragment shader.
 // Material values are flat for the object.
-flat out vec4 matAmbient;
-flat out vec4 matDiffuse;
-flat out vec4 matSpecular;
-flat out float matShininess;
+out Material {
+    flat out vec4 ambient;
+    flat out vec4 diffuse;
+    flat out vec4 specular;
+    flat out float shininess;
+} material;
 
 // Varying means these will be interpolated.
-out vec2 varyingTexCoord;
-out vec3 worldNormal;
-out vec4 worldPosition;
-out vec4 fragPosLightSpace;
+out Varying {
+    out vec2 texCoord;
+    out vec3 normal;
+    out vec4 position;
+    out vec4 posLightSpace;
+} coords;
 
 flat out int flatTextureIdx;
 
 void main() {
     // Send attributes to fragment shader
     flatTextureIdx = textureIdx;
-    matAmbient = materialAmbient;
-    matDiffuse = materialDiffuse;
-    matSpecular = materialSpecular;
-    matShininess = materialShininess;
+    material.ambient = materialAmbient;
+    material.diffuse = materialDiffuse;
+    material.specular = materialSpecular;
+    material.shininess = materialShininess;
 
     mat3 normalMx = mat3(transpose(inverse(modelMx)));
-    worldNormal = normalize(normalMx * vNormal);
+    coords.normal = normalize(normalMx * vNormal);
 
-    worldPosition = modelMx * vPosition;
+    coords.position = modelMx * vPosition;
 
-    varyingTexCoord = vTextureCoord;
+    coords.texCoord = vTextureCoord;
 
-    fragPosLightSpace = lightSpaceMx * worldPosition;
+    coords.posLightSpace = lightSpaceMx * coords.position;
 
     // Apply transformations to position
-    gl_Position = projectionMx * viewMx * worldPosition;
+    gl_Position = projectionMx * viewMx * coords.position;
 }
