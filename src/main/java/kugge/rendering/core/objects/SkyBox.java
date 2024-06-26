@@ -33,7 +33,16 @@ public class SkyBox {
     }
 
     public SkyBox(Texture texture) {
-        this(texture, texture, texture, texture, texture, texture);
+        if (texture.getWidth() != texture.getHeight()) {
+            throw new IllegalArgumentException("Skybox textures must be square.");
+        }
+
+        this.right = texture;
+        this.left = texture;
+        this.top = texture;
+        this.bottom = texture;
+        this.front = texture;
+        this.back = texture;
     }
 
     public SkyBox(Texture[] textures) {

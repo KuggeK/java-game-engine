@@ -9,7 +9,6 @@ out vec3 varyingTexCoord;
 
 void main() {
     varyingTexCoord = vPosition;
-    // Remove rotation from view matrix
-    mat4 viewRotMx = mat4(mat3(viewMx));
-    gl_Position = projectionMx * viewRotMx * vec4(vPosition, 1.0); 
+    vec4 pos = projectionMx * viewMx * vec4(vPosition, 1.0);
+    gl_Position = pos.xyww;
 }

@@ -50,6 +50,7 @@ public class OpenGLBindings implements GLEventListener {
     private Vector3f viewPos;
     private Matrix4f lightSpaceMatrix;
     private Matrix4f lightViewMatrix;
+    private Matrix4f helperMatrix;
 
     private int[] VAO;
     private int[] VBOs;
@@ -113,6 +114,7 @@ public class OpenGLBindings implements GLEventListener {
         viewPos = new Vector3f();
         lightSpaceMatrix = new Matrix4f();
         lightViewMatrix = new Matrix4f();
+        helperMatrix = new Matrix4f();
 
         this.meshes = meshes;
         this.materials = materials.stream().collect(Collectors.toMap(Material::ID, m -> m));
@@ -150,7 +152,7 @@ public class OpenGLBindings implements GLEventListener {
 
         // Configure depth test
         gl.glEnable(GL_DEPTH_TEST);
-        gl.glDepthFunc(GL_LESS);
+        gl.glDepthFunc(GL_LEQUAL);
         
         // Configure culling
         gl.glEnable(GL_CULL_FACE);
@@ -404,7 +406,9 @@ public class OpenGLBindings implements GLEventListener {
         int projectionMxLoc = gl.glGetUniformLocation(skyboxShaderProgram, "projectionMx");
         int positionLoc = gl.glGetAttribLocation(skyboxShaderProgram, "vPosition");
 
-        gl.glUniformMatrix4fv(viewMxLoc, 1, false, viewMatrix.get(matrixVals));
+        // View matrix without rotation
+        helperMatrix.identity().set3x3(viewMatrix);
+        gl.glUniformMatrix4fv(viewMxLoc, 1, false, helperMatrix.get(matrixVals));
         gl.glUniformMatrix4fv(projectionMxLoc, 1, false, projectionMatrix.get(matrixVals));
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
