@@ -171,10 +171,6 @@ public class OpenGLBindings implements GLEventListener {
         gl.glClear(GL_COLOR_BUFFER_BIT);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
 
-        if (skybox != null) {
-            renderSkyBox(gl); 
-        }
-
         // Upload mesh instance data to GPU
         for (MeshData mesh : meshData) {
             uploadMeshInstanceData(gl, mesh);
@@ -182,7 +178,7 @@ public class OpenGLBindings implements GLEventListener {
 
         // Render shadow map
         renderShadowMap(gl);
-        
+
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
         // Reset viewport
         resizeViewPort(drawable);
@@ -190,6 +186,11 @@ public class OpenGLBindings implements GLEventListener {
         
         // Render meshes
         renderMeshes(gl);
+
+        if (skybox != null) {
+            renderSkyBox(gl); 
+        }
+        
     
         // Unbind VAO
         gl.glBindVertexArray(0);
