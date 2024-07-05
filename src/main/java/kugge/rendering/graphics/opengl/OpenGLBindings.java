@@ -24,12 +24,12 @@ import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
 
 import kugge.rendering.core.objects.Instance;
-import kugge.rendering.core.objects.Mesh;
 import kugge.rendering.core.objects.SkyBox;
 import kugge.rendering.core.objects.Texture;
 import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.lights.PositionalLight;
 import kugge.rendering.core.objects.materials.Material;
+import kugge.rendering.core.objects.meshes.Mesh;
 import kugge.rendering.graphics.opengl.Shaders.Shader;
 public class OpenGLBindings implements GLEventListener {
 
