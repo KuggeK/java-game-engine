@@ -52,6 +52,11 @@
       <artifactId>gson</artifactId>
       <version>2.11.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.ode4j</groupId>
+      <artifactId>core</artifactId>
+      <version>0.5.3</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
