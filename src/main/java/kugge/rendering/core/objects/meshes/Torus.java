@@ -1,4 +1,4 @@
-package kugge.rendering.core.objects;
+package kugge.rendering.core.objects.meshes;
 
 public class Torus extends Mesh {
 

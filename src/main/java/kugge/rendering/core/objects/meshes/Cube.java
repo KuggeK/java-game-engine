@@ -1,4 +1,4 @@
-package kugge.rendering.core.objects;
+package kugge.rendering.core.objects.meshes;
 
 import kugge.rendering.core.objects.materials.Material;
 import kugge.rendering.core.objects.materials.Materials;

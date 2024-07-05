@@ -1,4 +1,4 @@
-package kugge.rendering.core.objects;
+package kugge.rendering.core.objects.meshes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
