@@ -7,14 +7,15 @@ import kugge.rendering.core.KeyInput;
 import kugge.rendering.core.SceneStorage;
 import kugge.rendering.core.config.EngineProjectConfiguration;
 import kugge.rendering.core.json.SceneStorageJSON;
+import kugge.rendering.core.objects.Instance;
 import kugge.rendering.core.objects.RenderScene;
+import kugge.rendering.core.physics.PhysicsBody;
 import kugge.rendering.graphics.Renderer;
 import kugge.rendering.graphics.Window;
 import kugge.rendering.graphics.opengl.OpenGLRenderer;
 import kugge.rendering.graphics.opengl.OpenGLWindow;
 
 public class RenderingEngine {
-
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
             throw new IllegalArgumentException("No project path provided.");
@@ -27,7 +28,6 @@ public class RenderingEngine {
     }
 
     public void start(EngineProjectConfiguration config) {
-        
         // Populate the global paths from the configuration
         EngineProjectConfiguration.populateGlobalPaths(config);
 
@@ -51,8 +51,9 @@ public class RenderingEngine {
         keyInput.bindToWindow(window);
         
         // Set of objects that need to be updated every frame
+        CameraController cameraController = new CameraController(scene.getCamera());
         Set<Updateable> updateables = Set.of(
-            new CameraController(scene.getCamera())
+            cameraController
         );
 
         // Timing variables
@@ -61,6 +62,8 @@ public class RenderingEngine {
         long deltaTime = 0;
         long timeTaken = 0;
         int targetFPS = config.getTargetFPS();
+
+        boolean paused = false; 
 
         // Game loop
         while (true) {
@@ -77,23 +80,46 @@ public class RenderingEngine {
                 window.toggleFullscreen();
             }
 
-            // Save the scene
-            if (keyInput.isKeyPressed(KeyEvent.VK_L)) {
+            if (keyInput.isKeyPressed(KeyEvent.VK_S)) {
                 if (keyInput.isKeyHeld(KeyEvent.VK_CONTROL)) {
-                    System.out.println("Saving scene");
-                    SceneStorage storage = new SceneStorageJSON();
                     try {
+                        SceneStorage storage = new SceneStorageJSON();
                         storage.saveScene(scene);
+                        System.out.println("Scene saved");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    System.out.println("Scene saved");
-                }
-            }
+                } 
+            } 
 
             // Update
             for (Updateable updateable : updateables) {
                 updateable.update(keyInput, deltaTime);
+            }
+
+            if (keyInput.isKeyPressed(KeyEvent.VK_P)) {
+                paused = !paused;
+            }
+
+            if (!paused) {
+                // Update the physics bodies
+                for (Instance instance : scene.getInstances().parallelStream().filter(i -> i.getBodyID() != -1).toList()) {
+                    PhysicsBody body = scene.getPhysicsWorld().getBody(instance.getBodyID());
+                    body.setPosition(instance.getTransform().getPosition());
+                    body.setRotation(instance.getTransform().getRotation());
+                }
+
+                // Update physics simulation
+                scene.getPhysicsWorld().tick(1.0 / targetFPS);
+                
+                // Update the instance positions
+                for (Instance instance : scene.getInstances().parallelStream().filter(i -> i.getBodyID() != -1).toList()) {
+                    PhysicsBody body = scene.getPhysicsWorld().getBody(instance.getBodyID());
+                    if (body != null) {
+                        instance.getTransform().setPosition(body.getPosition());
+                        instance.getTransform().setRotation(body.getRotation());
+                    }
+                }
             }
 
             keyInput.clear();

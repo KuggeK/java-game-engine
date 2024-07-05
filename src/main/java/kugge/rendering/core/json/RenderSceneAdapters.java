@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 import com.google.gson.GsonBuilder;
@@ -24,8 +25,6 @@ import com.google.gson.JsonSerializer;
 import kugge.rendering.core.OpenGLConstants;
 import kugge.rendering.core.objects.Camera;
 import kugge.rendering.core.objects.Instance;
-import kugge.rendering.core.objects.Mesh;
-import kugge.rendering.core.objects.Meshes;
 import kugge.rendering.core.objects.RenderScene;
 import kugge.rendering.core.objects.SkyBox;
 import kugge.rendering.core.objects.Texture;
@@ -33,6 +32,12 @@ import kugge.rendering.core.objects.Transform;
 import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.lights.PositionalLight;
 import kugge.rendering.core.objects.materials.Material;
+import kugge.rendering.core.objects.meshes.Mesh;
+import kugge.rendering.core.objects.meshes.Meshes;
+import kugge.rendering.core.physics.PhysicsBody;
+import kugge.rendering.core.physics.PhysicsCollider;
+import kugge.rendering.core.physics.PhysicsWorld;
+import kugge.rendering.core.physics.PhysicsCollider.ColliderType;
 
 public class RenderSceneAdapters {    
 
@@ -51,6 +56,9 @@ public class RenderSceneAdapters {
         builder.registerTypeAdapter(Texture.class, new TextureAdapter(debugMode));
         builder.registerTypeAdapter(RenderScene.class, new RenderSceneAdapter());
         builder.registerTypeAdapter(SkyBox.class, new SkyBoxAdapter());
+        builder.registerTypeAdapter(PhysicsBody.class, new PhysicsBodyAdapter());
+        builder.registerTypeAdapter(PhysicsCollider.class, new PhysicsColliderAdapter());
+        builder.registerTypeAdapter(PhysicsWorld.class, new PhysicsWorldAdapter());
     }
 
     /**
@@ -87,6 +95,8 @@ public class RenderSceneAdapters {
             jsonObject.addProperty("materialID", src.getMaterialID());
             jsonObject.addProperty("textureIndex", src.getTextureIndex());
             jsonObject.add("transform", context.serialize(src.getTransform(), Transform.class));
+            jsonObject.addProperty("bodyID", src.getBodyID());
+            jsonObject.addProperty("colliderID", src.getColliderID());
             return jsonObject;
         }
     }
@@ -107,9 +117,20 @@ public class RenderSceneAdapters {
             List<PositionalLight> positionalLights = deserializeArrayTo(PositionalLight.class, root.get("positionalLights").getAsJsonArray(), context);
             DirectionalLight directionalLight = context.deserialize(root.get("directionalLight"), DirectionalLight.class);
             Vector4f globalAmbient = context.deserialize(root.get("globalAmbient"), Vector4f.class);
+            PhysicsWorld physicsWorld = context.deserialize(root.get("physicsWorld"), PhysicsWorld.class);
+            physicsWorld = physicsWorld == null ? new PhysicsWorld() : physicsWorld;
             SkyBox skyBox = context.deserialize(root.get("skyBox"), SkyBox.class);
-        
-            RenderScene scene = new RenderScene(ID, camera, meshes, meshInstances, materials, textures, positionalLights, globalAmbient, directionalLight, skyBox);
+
+            for (Instance instance: meshInstances) {
+                int bodyID = instance.getBodyID();
+                int colliderID = instance.getColliderID();
+                if (bodyID != -1 && colliderID != -1) {
+                    physicsWorld.linkBodyAndCollider(bodyID, colliderID);
+                    physicsWorld.getCollider(colliderID).updateScale(instance.getTransform().getScale());
+                }
+            }
+            
+            RenderScene scene = new RenderScene(ID, camera, meshes, meshInstances, materials, textures, positionalLights, globalAmbient, directionalLight, physicsWorld, skyBox);
             return scene;
         }
 
@@ -279,4 +300,90 @@ public class RenderSceneAdapters {
         }
     }
     
+    private static class PhysicsBodyAdapter implements JsonSerializer<PhysicsBody> {
+
+        @Override
+        public JsonElement serialize(PhysicsBody src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("ID", src.getID());
+            jsonObject.addProperty("isKinematic", src.isKinematic());
+            jsonObject.addProperty("restitution", src.getRestitution());
+            jsonObject.addProperty("mass", src.getMass());
+            return jsonObject;
+        }
+    }
+
+    public static class PhysicsColliderAdapter implements JsonSerializer<PhysicsCollider>, JsonDeserializer<PhysicsCollider> {
+
+        @Override
+        public JsonElement serialize(PhysicsCollider src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("ID", src.getID());
+            jsonObject.addProperty("colliderType", src.getColliderType().toString());
+            return jsonObject;
+        }
+
+        @Override
+        public PhysicsCollider deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                throws JsonParseException {
+            JsonObject root = json.getAsJsonObject();
+            int ID = root.get("ID").getAsInt();
+            String colliderTypeString = root.get("colliderType").getAsString();
+            ColliderType colliderType = ColliderType.valueOf(colliderTypeString);
+            return new PhysicsCollider(ID, colliderType);
+        }
+    }
+
+    public static class PhysicsWorldAdapter implements JsonSerializer<PhysicsWorld>, JsonDeserializer<PhysicsWorld> {
+
+        @Override
+        public JsonElement serialize(PhysicsWorld src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.add("gravity", context.serialize(src.getGravity()));
+
+            JsonArray bodies = new JsonArray();
+            for (PhysicsBody body : src.getBodies()) {
+                bodies.add(context.serialize(body));
+            }
+            jsonObject.add("bodies", bodies);
+
+            JsonArray colliders = new JsonArray();
+            for (PhysicsCollider collider : src.getColliders()) {
+                colliders.add(context.serialize(collider));
+            }
+            jsonObject.add("colliders", colliders);
+            return jsonObject;
+        }
+
+        @Override
+        public PhysicsWorld deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                throws JsonParseException {
+            JsonObject root = json.getAsJsonObject();
+            
+            PhysicsWorld world = new PhysicsWorld();
+            Vector3f gravity = context.deserialize(root.get("gravity"), Vector3f.class);
+            world.setGravity(gravity);
+
+            JsonArray bodiesArray = root.get("bodies").getAsJsonArray();
+            for (JsonElement bodyElement : bodiesArray) {
+                JsonObject bodyObject = bodyElement.getAsJsonObject();
+                int ID = bodyObject.get("ID").getAsInt();
+                boolean isKinematic = bodyObject.get("isKinematic").getAsBoolean();
+                double restitution = bodyObject.get("restitution").getAsDouble();
+                double mass = bodyObject.get("mass").getAsDouble();
+                PhysicsBody body = world.addBody(ID, isKinematic);
+                body.setRestitution(restitution);
+                body.setMass(mass);
+            }
+
+            List<PhysicsCollider> colliders = deserializeArrayTo(PhysicsCollider.class, root.get("colliders").getAsJsonArray(), context);
+            for (PhysicsCollider collider : colliders) {
+                world.addCollider(collider);
+            }
+            
+            return world;
+        }
+
+    } 
+
 }

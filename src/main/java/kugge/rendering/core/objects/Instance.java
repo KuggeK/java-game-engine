@@ -18,9 +18,12 @@ public class Instance {
     /**
      * The materialID of this instance
      */
-    private int materialID;
+    private int materialID = -1;
 
     private int textureIndex = -1;
+
+    private int bodyID = -1;
+    private int colliderID = -1;
 
     public Instance(int meshID, float[] position, float[] rotation, float[] scale, int materialID) {
         this.meshID = meshID;
@@ -65,5 +68,21 @@ public class Instance {
 
     public void setTextureIndex(int textureIndex) {
         this.textureIndex = textureIndex;
+    }
+
+    public int getBodyID() {
+        return bodyID;
+    }
+
+    public void setBodyID(int bodyID) {
+        this.bodyID = bodyID;
+    }
+
+    public int getColliderID() {
+        return colliderID;
+    }
+
+    public void setColliderID(int colliderID) {
+        this.colliderID = colliderID;
     }
 }

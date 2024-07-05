@@ -16,12 +16,12 @@ import org.junit.jupiter.api.Test;
 import kugge.rendering.core.config.ProjectPaths;
 import kugge.rendering.core.json.SceneStorageJSON;
 import kugge.rendering.core.objects.Camera;
-import kugge.rendering.core.objects.Mesh;
 import kugge.rendering.core.objects.RenderScene;
 import kugge.rendering.core.objects.Transform;
 import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.lights.PositionalLight;
 import kugge.rendering.core.objects.materials.Material;
+import kugge.rendering.core.objects.meshes.Mesh;
 
 public class SceneConfigurationTest {
     

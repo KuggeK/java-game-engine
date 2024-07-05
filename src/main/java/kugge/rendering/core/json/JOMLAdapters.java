@@ -77,7 +77,7 @@ public class JOMLAdapters {
         public Quaternionf deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
                 throws JsonParseException {
             JsonArray array = json.getAsJsonArray();
-            Quaternionf quaternion = new Quaternionf(array.get(0).getAsFloat(), array.get(1).getAsFloat(), array.get(2).getAsFloat(), array.get(3).getAsFloat());
+            Quaternionf quaternion = new Quaternionf(array.get(0).getAsFloat(), array.get(1).getAsFloat(), array.get(2).getAsFloat(), array.get(3).getAsFloat()).normalize();
             return quaternion;
         }
     }

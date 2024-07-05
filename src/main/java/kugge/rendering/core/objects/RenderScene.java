@@ -8,6 +8,8 @@ import org.joml.Vector4f;
 import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.lights.PositionalLight;
 import kugge.rendering.core.objects.materials.Material;
+import kugge.rendering.core.objects.meshes.Mesh;
+import kugge.rendering.core.physics.PhysicsWorld;
 
 public class RenderScene {
     
@@ -23,9 +25,11 @@ public class RenderScene {
     private Vector4f globalAmbient;
     private DirectionalLight directionalLight;
 
+    private PhysicsWorld physicsWorld;
+
     private SkyBox skyBox;
 
-    public RenderScene(int ID, Camera camera, List<Mesh> meshes, List<Instance> meshInstances, List<Material> materials, List<Texture> textures, List<PositionalLight> positionalLights, Vector4f globalAmbient, DirectionalLight directionalLight, SkyBox skyBox) {
+    public RenderScene(int ID, Camera camera, List<Mesh> meshes, List<Instance> meshInstances, List<Material> materials, List<Texture> textures, List<PositionalLight> positionalLights, Vector4f globalAmbient, DirectionalLight directionalLight, PhysicsWorld physicsWorld, SkyBox skyBox) {
         this.ID = ID;
         this.camera = camera;
         this.meshes = meshes;
@@ -35,11 +39,12 @@ public class RenderScene {
         this.positionalLights = positionalLights;
         this.globalAmbient = globalAmbient;
         this.directionalLight = directionalLight;
+        this.physicsWorld = physicsWorld;
         this.skyBox = skyBox;
     }
 
     public RenderScene(Camera camera, List<Mesh> meshes, List<Instance> meshInstances) {
-        this(-1, camera, meshes, meshInstances, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Vector4f(0.1f), new DirectionalLight(), null);
+        this(-1, camera, meshes, meshInstances, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new Vector4f(0.1f), new DirectionalLight(), new PhysicsWorld(), null);
     }
 
     public int getID() {
@@ -116,6 +121,14 @@ public class RenderScene {
 
     public void setDirectionalLight(DirectionalLight directionalLight) {
         this.directionalLight = directionalLight;
+    }
+
+    public PhysicsWorld getPhysicsWorld() {
+        return physicsWorld;
+    }
+
+    public void setPhysicsWorld(PhysicsWorld physicsWorld) {
+        this.physicsWorld = physicsWorld;
     }
 
     public SkyBox getSkyBox() {

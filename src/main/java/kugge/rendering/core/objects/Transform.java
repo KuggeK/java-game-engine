@@ -1,7 +1,5 @@
 package kugge.rendering.core.objects;
 
-import java.util.logging.Logger;
-
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -15,8 +13,6 @@ public class Transform {
 
     private Matrix4f modelMatrix;
     private boolean modelMatrixChanged;
-
-    private transient Logger logger = Logger.getLogger(Transform.class.getName());
 
     public Transform() {
         position = new Vector3f();
@@ -44,6 +40,7 @@ public class Transform {
 
     public void setPosition(float[] position) {
         this.position.set(position[0], position[1], position[2]);
+        modelMatrixChanged = true;
     }
 
     public void setRotation(float x, float y, float z) {
@@ -68,6 +65,11 @@ public class Transform {
 
     public void setScale(float x, float y, float z) {
         scale.set(x, y, z);
+        modelMatrixChanged = true;
+    }
+
+    public void setScale(Vector3f scale) {
+        this.scale.set(scale);
         modelMatrixChanged = true;
     }
 
@@ -149,5 +151,13 @@ public class Transform {
 
     public Vector3f getScale() {
         return scale;
+    }
+
+    public void lookAt(Vector3f target) {
+        Vector3f forward = new Vector3f(target).sub(position).normalize();
+        Vector3f right = new Vector3f(0, 1, 0).cross(forward).normalize();
+        Vector3f up = new Vector3f(forward).cross(right).normalize();
+        rotation.identity().lookAlong(forward, up);
+        modelMatrixChanged = true;
     }
 }

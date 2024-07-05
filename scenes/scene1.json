@@ -1,1 +1,296 @@
-{"ID":1,"camera":{"transform":{"position":[-7.293108,-6.470002,25.249609],"rotation":[0.0,0.100487776,0.0,-0.99494225],"scale":[0.0,0.0,0.0]},"fov":60.0,"near":0.01,"far":1000.0},"meshes":[{"ID":0,"textureIDs":[],"textureParameters":{}},{"ID":1,"textureIDs":[],"textureParameters":{}}],"meshInstances":[{"meshID":0,"materialID":0,"textureIndex":-1,"transform":{"position":[0.0,-2.0,-5.0],"rotation":[0.0,0.0,0.0,1.0],"scale":[10.0,0.01,10.0]}},{"meshID":0,"materialID":1,"textureIndex":-1,"transform":{"position":[0.0,1.0,-5.0],"rotation":[0.0,0.0,0.0,1.0],"scale":[2.0,6.0,0.75]}}],"materials":[{"ID":0,"ambient":[0.7,0.7,0.7,1.0],"diffuse":[0.5,0.5,0.5,1.0],"specular":[0.3,0.3,0.3,1.0],"shininess":3.0},{"ID":1,"ambient":[0.2,0.2,0.2,1.0],"diffuse":[0.1,0.08,0.1,1.1],"specular":[0.1,0.08,0.1,1.0],"shininess":3.0}],"textures":[],"positionalLights":[],"globalAmbient":[0.3,0.3,0.3,0.3],"directionalLight":{"direction":[0.5,-1.0,-1.0],"ambient":[0.2,0.2,0.2,1.0],"diffuse":[0.5,0.5,0.5,1.0],"specular":[1.0,1.0,1.0,1.0]},"skyBox":{"right":{"ID":-1,"fileName":"skybox/right.jpg"},"left":{"ID":-1,"fileName":"skybox/left.jpg"},"top":{"ID":-1,"fileName":"skybox/top.jpg"},"bottom":{"ID":-1,"fileName":"skybox/bottom.jpg"},"front":{"ID":-1,"fileName":"skybox/front.jpg"},"back":{"ID":-1,"fileName":"skybox/back.jpg"}}}
+{
+    "ID": 1,
+    "camera": {
+        "transform": {
+            "position": [
+                0.5599997,
+                0.0,
+                15.030008
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "scale": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        },
+        "fov": 60.0,
+        "near": 0.01,
+        "far": 1000.0
+    },
+    "meshes": [
+        {
+            "ID": 0,
+            "textureIDs": [],
+            "textureParameters": {}
+        },
+        {
+            "ID": 1,
+            "textureIDs": [],
+            "textureParameters": {}
+        }
+    ],
+    "meshInstances": [
+        {
+            "meshID": 0,
+            "materialID": 0,
+            "textureIndex": -1,
+            "transform": {
+                "position": [
+                    0.0,
+                    -8.0,
+                    -5.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    -0.15,
+                    0.85
+                ],
+                "scale": [
+                    20.0,
+                    2.0,
+                    10.0
+                ]
+            },
+            "bodyID": 2,
+            "colliderID": 2
+        },
+        {
+            "meshID": 1,
+            "materialID": 1,
+            "textureIndex": -1,
+            "transform": {
+                "position": [
+                    -8.0,
+                    5.0,
+                    -5.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "scale": [
+                    0.5,
+                    0.5,
+                    0.5
+                ]
+            },
+            "bodyID": 1,
+            "colliderID": 1
+        },
+        {
+            "meshID": 1,
+            "materialID": 1,
+            "textureIndex": -1,
+            "transform": {
+                "position": [
+                    -8.0,
+                    9.0,
+                    -5.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "bodyID": 3,
+            "colliderID": 3
+        },
+        {
+            "meshID": 1,
+            "materialID": 1,
+            "textureIndex": -1,
+            "transform": {
+                "position": [
+                    -8.0,
+                    17.0,
+                    -5
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "bodyID": 4,
+            "colliderID": 4
+        }
+    ],
+    "materials": [
+        {
+            "ID": 0,
+            "ambient": [
+                0.7,
+                0.7,
+                0.7,
+                1.0
+            ],
+            "diffuse": [
+                0.5,
+                0.5,
+                0.5,
+                1.0
+            ],
+            "specular": [
+                0.3,
+                0.3,
+                0.3,
+                1.0
+            ],
+            "shininess": 3.0
+        },
+        {
+            "ID": 1,
+            "ambient": [
+                0.2,
+                0.2,
+                0.2,
+                1.0
+            ],
+            "diffuse": [
+                0.1,
+                0.08,
+                0.1,
+                1.1
+            ],
+            "specular": [
+                0.1,
+                0.08,
+                0.1,
+                1.0
+            ],
+            "shininess": 3.0
+        }
+    ],
+    "textures": [],
+    "positionalLights": [],
+    "globalAmbient": [
+        0.3,
+        0.3,
+        0.3,
+        0.3
+    ],
+    "directionalLight": {
+        "direction": [
+            0.5,
+            -1.0,
+            -1.0
+        ],
+        "ambient": [
+            0.2,
+            0.2,
+            0.2,
+            1.0
+        ],
+        "diffuse": [
+            0.5,
+            0.5,
+            0.5,
+            1.0
+        ],
+        "specular": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ]
+    },
+    "physicsWorld": {
+        "gravity": [
+            0.0,
+            -9.81,
+            0.0
+        ],
+        "bodies": [
+            {
+                "ID": 1,
+                "isKinematic": false,
+                "restitution": 1.0,
+                "mass": 0.25
+            },
+            {
+                "ID": 2,
+                "isKinematic": true,
+                "restitution": 0.5,
+                "mass": 100.0
+            },
+            {
+                "ID": 3,
+                "isKinematic": false,
+                "restitution": 0.5,
+                "mass": 1.0
+            },
+            {
+                "ID": 4,
+                "isKinematic": false,
+                "restitution": 0.25,
+                "mass": 1.0
+            }
+        ],
+        "colliders": [
+            {
+                "ID": 1,
+                "colliderType": "SPHERE"
+            },
+            {
+                "ID": 2,
+                "colliderType": "BOX"
+            },
+            {
+                "ID": 3,
+                "colliderType": "SPHERE"
+            },
+            {
+                "ID": 4,
+                "colliderType": "SPHERE"
+            }
+        ]
+    },
+    "skyBox": {
+        "right": {
+            "ID": -1,
+            "fileName": "skybox/right.jpg"
+        },
+        "left": {
+            "ID": -1,
+            "fileName": "skybox/left.jpg"
+        },
+        "top": {
+            "ID": -1,
+            "fileName": "skybox/top.jpg"
+        },
+        "bottom": {
+            "ID": -1,
+            "fileName": "skybox/bottom.jpg"
+        },
+        "front": {
+            "ID": -1,
+            "fileName": "skybox/front.jpg"
+        },
+        "back": {
+            "ID": -1,
+            "fileName": "skybox/back.jpg"
+        }
+    }
+}
