@@ -10,17 +10,17 @@ import kugge.rendering.core.objects.Camera;
 public class CameraController implements Updateable {
     
     private Camera camera;
+    private float velocity = 0.01f;
 
     public CameraController(Camera camera) {
         this.camera = camera;
     }
 
+    @Override
     public void update(KeyInput keyInput, float deltaTime) {
         float forwardVelocity = 0.0f;
         float horizontalVelocity = 0.0f;
         float verticalVelocity = 0.0f;
-
-        float velocity = 0.005f;
 
         // Forward and backward
         if (keyInput.isKeyHeld(KeyEvent.VK_W)) {
@@ -90,7 +90,19 @@ public class CameraController implements Updateable {
         if (yRot != 0) {
             // When rotating the camera we want to rotate the camera around the 
             // y-axis of the world, not the y-axis of the camera.
-            camera.getTransform().rotate(0, yRot * deltaTime, 0);
+            camera.getTransform().getRotation().rotateLocalY(yRot * deltaTime);
         }
+    }
+
+    public Camera getCamera() {
+        return camera;
+    }
+
+    public void setCamera(Camera camera) {
+        this.camera = camera;
+    }
+
+    public void setVelocity(float velocity) {
+        this.velocity = velocity;
     }
 }
