@@ -16,9 +16,9 @@
     ],
     "initialSceneID": 1,
 
-    "scenesPath": "scenes",
-    "meshesPath": "assets/meshes",
-    "texturesPath": "assets/textures",
+    "scenesPath": "scenes/",
+    "meshesPath": "assets/meshes/",
+    "texturesPath": "assets/textures/",
     "shadersPath": "shaders",
-    "scriptsPath": "scripts"
+    "scriptsPath": "assets/scripts/"
 }

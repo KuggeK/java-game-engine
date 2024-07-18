@@ -5,7 +5,6 @@ import java.awt.event.KeyListener;
 import java.util.HashMap;
 import java.util.Map;
 
-import kugge.rendering.graphics.Window;
 
 public class KeyInput {
 
@@ -17,10 +16,6 @@ public class KeyInput {
         keysPressed = new HashMap<>();
         keysHeld = new HashMap<>();
         keyRegisterer = new DefaultKeyRegisterer();
-    }
-
-    public void bindToWindow(Window window) {
-        window.registerEventListener(keyRegisterer);
     }
 
     public void keyPressed(KeyEvent e) {
@@ -46,6 +41,10 @@ public class KeyInput {
 
     public void clearHeld() {
         keysHeld.clear();
+    }
+
+    public KeyListener getKeyRegisterer() {
+        return keyRegisterer;
     }
 
     private class DefaultKeyRegisterer implements KeyListener {
