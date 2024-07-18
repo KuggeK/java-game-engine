@@ -94,7 +94,7 @@ void main() {
     Light posContribution;
     for (int i = 0; i < nLights && i < MAX_LIGHTS; ++i) {
         posContribution = CalculatePosLight(posLights[i], coords.position, N, V);
-        lightColor += posContribution.ambient + posContribution.diffuse + posContribution.diffuse;
+        lightColor += posContribution.ambient + posContribution.diffuse + posContribution.specular;
     }
     
     gl_FragColor = textureColor * lightColor;

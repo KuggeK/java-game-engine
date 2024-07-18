@@ -79,7 +79,7 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
             gl.glUniform4fv(unif(gl, "posLights[" + i + "].ambient"), 1, light.getAmbient().get(matrixValueHelper));
             gl.glUniform4fv(unif(gl, "posLights[" + i + "].diffuse"), 1, light.getDiffuse().get(matrixValueHelper));
             gl.glUniform4fv(unif(gl, "posLights[" + i + "].specular"), 1, light.getSpecular().get(matrixValueHelper));
-            gl.glUniform3fv(unif(gl, "posLights[" + i + "].position"), 1, light.getPosition().get(matrixValueHelper));
+            gl.glUniform4fv(unif(gl, "posLights[" + i + "].position"), 1, light.getPosition().get(matrixValueHelper));
             gl.glUniform1f(unif(gl, "posLights[" + i + "].attenuation.constant"), light.getConstant());
             gl.glUniform1f(unif(gl, "posLights[" + i + "].attenuation.linear"), light.getLinear());
             gl.glUniform1f(unif(gl, "posLights[" + i + "].attenuation.quadratic"), light.getQuadratic());
