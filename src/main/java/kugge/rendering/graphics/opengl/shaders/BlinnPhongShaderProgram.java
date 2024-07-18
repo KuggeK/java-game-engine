@@ -54,6 +54,11 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
 
         // Set the light uniforms
         DirectionalLight dirLight = scene.getDirectionalLight();
+
+        if (dirLight == null) {
+            dirLight = DirectionalLight.EMPTY;
+        }
+
         gl.glUniform4fv(unif(gl, "dirLight.ambient"), 1, dirLight.getAmbient().get(matrixValueHelper));
         gl.glUniform4fv(unif(gl, "dirLight.diffuse"), 1, dirLight.getDiffuse().get(matrixValueHelper));
         gl.glUniform4fv(unif(gl, "dirLight.specular"), 1, dirLight.getSpecular().get(matrixValueHelper));

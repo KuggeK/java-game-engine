@@ -4,11 +4,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.joml.Vector3f;
+import org.joml.Vector4f;
+
 import kugge.rendering.core.objects.Camera;
 import kugge.rendering.core.objects.GameComponent;
 import kugge.rendering.core.objects.SkyBox;
 import kugge.rendering.core.objects.Subsystem;
 import kugge.rendering.core.objects.Texture;
+import kugge.rendering.core.objects.lights.DirectionalLight;
+import kugge.rendering.core.objects.lights.PositionalLight;
 import kugge.rendering.core.objects.rendering.RenderInstance;
 import kugge.rendering.core.objects.rendering.RenderSceneImpl;
 import kugge.rendering.graphics.opengl.OpenGLRenderer;
@@ -30,12 +35,35 @@ public class RenderingEngine implements Subsystem {
 
         // TODO Don't just change the camera automatically, allow for multiple 
         // cameras and a way to switch between them.
-        componentInitListeners.put(Camera.class, (component) -> {
+        componentInitListeners.put(Camera.class, component -> {
             Camera camera = (Camera) component;
             scene.setCamera(camera);
         });
 
-        // TODO Add listeners for lights and other rendering components
+        componentInitListeners.put(DirectionalLight.class, component -> {
+            DirectionalLight light = (DirectionalLight) component;
+            scene.setDirectionalLight(light);
+        });
+        componentDestroyListeners.put(DirectionalLight.class, component -> {
+            scene.setDirectionalLight(null);
+        });
+
+        componentInitListeners.put(PositionalLight.class, component -> {
+            PositionalLight light = (PositionalLight) component;
+            scene.addPositionalLight(light);
+
+            Vector4f ambient = light.getAmbient();
+            Vector4f diffuse = light.getDiffuse();
+            Vector4f specular = light.getSpecular();
+            System.out.println("Ambient: " + ambient.x + ", " + ambient.y + ", " + ambient.z + ", " + ambient.w);
+            System.out.println("Diffuse: " + diffuse.x + ", " + diffuse.y + ", " + diffuse.z + ", " + diffuse.w);
+            System.out.println("Specular: " + specular.x + ", " + specular.y + ", " + specular.z + ", " + specular.w);
+
+        });
+        componentDestroyListeners.put(PositionalLight.class, component -> {
+            PositionalLight light = (PositionalLight) component;
+            scene.removePositionalLight(light);
+        });
 
         scene = new RenderSceneImpl();
 

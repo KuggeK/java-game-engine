@@ -103,6 +103,11 @@ public class ShadowMapShaderProgram implements ShaderProgram {
         gl.glUseProgram(programID);
         gl.glBindVertexArray(locations.getMeshVAO());
 
+        if (scene.getDirectionalLight() == null) {
+            clearTexture(gl);
+            return;
+        }
+
         int modelMxLoc = gl.glGetUniformLocation(programID, "modelMx");
         int positionLoc = gl.glGetAttribLocation(programID, "vPosition");
 
@@ -148,6 +153,18 @@ public class ShadowMapShaderProgram implements ShaderProgram {
 
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
+    }
+
+    /**
+     * Clear the shadow map texture to a white color so no shadows are cast.
+     * @param gl The OpenGL context
+     * @param locations The OpenGL locations
+     */
+    private void clearTexture(GL4 gl) {
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+        gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        gl.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     /**

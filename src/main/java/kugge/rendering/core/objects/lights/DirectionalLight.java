@@ -2,8 +2,18 @@ package kugge.rendering.core.objects.lights;
 
 import org.joml.Vector3f;
 
+import kugge.rendering.core.objects.ComponentField;
+
 public class DirectionalLight extends Light {
 
+    public static final DirectionalLight EMPTY = new DirectionalLight(
+        new float[] {0, 0, 0, 1}, 
+        new float[] {0, 0, 0, 1}, 
+        new float[] {0, 0, 0, 1}, 
+        new float[] {0, 0, 0, 1}
+    );
+
+    @ComponentField
     private Vector3f direction;
 
     public DirectionalLight(float[] ambient, float[] diffuse, float[] specular, float[] direction) {

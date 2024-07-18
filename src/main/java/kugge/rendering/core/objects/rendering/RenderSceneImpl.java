@@ -42,9 +42,7 @@ public class RenderSceneImpl implements RenderScene {
         renderInstances = new LinkedHashMap<>();
         materials = new HashMap<>();
         projectionMatrix = new Matrix4f();
-        directionalLight = new DirectionalLight();
-        globalAmbient = new Vector4f();
-        skyBox = null;
+        globalAmbient = new Vector4f(0.2f, 0.2f, 0.2f, 1.0f);
         lightSpaceMatrix = new Matrix4f();
         positionalLights = new ArrayList<>();
         assetManager = SQLiteAssetManager.getInstance();
@@ -137,6 +135,10 @@ public class RenderSceneImpl implements RenderScene {
 
     public void addPositionalLight(PositionalLight light) {
         positionalLights.add(light);
+    }
+
+    public void removePositionalLight(PositionalLight light) {
+        positionalLights.remove(light);
     }
 
     @Override

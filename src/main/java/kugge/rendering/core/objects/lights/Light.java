@@ -2,10 +2,18 @@ package kugge.rendering.core.objects.lights;
 
 import org.joml.Vector4f;
 
-public class Light {
+import kugge.rendering.core.objects.ComponentField;
+import kugge.rendering.core.objects.GameComponent;
+
+public class Light extends GameComponent {
     
+    @ComponentField
     protected Vector4f ambient;
+
+    @ComponentField
     protected Vector4f diffuse;
+
+    @ComponentField
     protected Vector4f specular;
 
     public Light(float[] ambient, float[] diffuse, float[] specular) {
