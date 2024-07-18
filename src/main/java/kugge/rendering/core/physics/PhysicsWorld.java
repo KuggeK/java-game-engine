@@ -39,6 +39,9 @@ public class PhysicsWorld implements Subsystem {
     private Map<Integer, Integer> bodyColliderLinks;
     private Set<Integer> unlinkedBodies;
 
+    private Set<DBody> bodiesToDestroy;
+    private Set<DGeom> collidersToDestroy;
+
     public PhysicsWorld(double timeStep) {
         world = OdeHelper.createWorld();
         space = OdeHelper.createSimpleSpace();
@@ -59,6 +62,9 @@ public class PhysicsWorld implements Subsystem {
         bodyColliderLinks = new HashMap<>();
         unlinkedBodies = new HashSet<>();
 
+        bodiesToDestroy = new HashSet<>();
+        collidersToDestroy = new HashSet<>();
+
         // PhysicsCollider listeners
         componentInitListeners.put(PhysicsCollider.class, component -> {
             PhysicsCollider collider = (PhysicsCollider) component;
@@ -66,7 +72,7 @@ public class PhysicsWorld implements Subsystem {
         });
         componentDestroyListeners.put(PhysicsCollider.class, component -> {
             PhysicsCollider collider = (PhysicsCollider) component;
-            space.remove(collider.getCollider());
+            collidersToDestroy.add(collider.getCollider());
             colliders.remove(collider.getID());
         });
 
@@ -77,8 +83,10 @@ public class PhysicsWorld implements Subsystem {
         });
         componentDestroyListeners.put(PhysicsBody.class, component -> {
             PhysicsBody body = (PhysicsBody) component;
-            body.getBody().destroy();
+            bodiesToDestroy.add(body.getBody());
             bodies.remove(body.getID());
+            corrections.remove(body.getID());
+            unlinkedBodies.remove(body.getID());
         });
         
     }
@@ -98,6 +106,15 @@ public class PhysicsWorld implements Subsystem {
 
     @Override
     public void update(float dt) {
+
+        // Destroy bodies and colliders
+        for (DBody body : bodiesToDestroy) {
+            body.destroy();
+        }
+
+        for (DGeom collider : collidersToDestroy) {
+            collider.destroy();
+        }
 
         linkUnlinkedBodies();
 

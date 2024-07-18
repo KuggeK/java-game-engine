@@ -92,12 +92,7 @@ public class GameObject {
         for (GameComponent oldComponent : components) {
             if (oldComponent.getClass().equals(component.getClass())) {
                 if (force) {
-                    boolean removed = removeComponent(oldComponent);
-                    if (!removed) {
-                        System.out.println("Failed to remove existing component of type " + component.getClass().getName() + " from game object.");
-                        return;
-                    }
-                    System.out.println("Replacing component of type " + component.getClass().getName() + " on game object " + ID);
+                    removeComponent(oldComponent);
                     addComponent(component);
                 } else {
                     System.out.println("Component of type " + component.getClass().getName() + " already exists on this game object.");
@@ -121,15 +116,12 @@ public class GameObject {
      * Remove a component from the game object.
      * @param component
      */
-    public boolean removeComponent(GameComponent component) {
-        boolean removed = components.remove(component);
-        if (removed) {
-            if (gameObjectListener != null) {
-                gameObjectListener.onComponentRemoved(component.getClass(), component);
-            }
-            component.dispose();
+    public void removeComponent(GameComponent component) {
+        if (gameObjectListener != null) {
+            gameObjectListener.onComponentRemoved(component.getClass(), component);
         }
-        return removed;
+        component.dispose();
+        components.remove(component);
     }
 
     /**
@@ -137,13 +129,13 @@ public class GameObject {
      * @param type The type of the component to remove.
      * @return True if a component of the specified type was removed, false otherwise.
      */
-    public boolean removeComponentOfType(Class<? extends GameComponent> type) {
+    public void removeComponentOfType(Class<? extends GameComponent> type) {
         for (GameComponent c : components) {
             if (c.getClass().equals(type)) {
-                return removeComponent(c);
+                removeComponent(c);
+                return;
             }
         }
-        return false;
     }
 
     public Transform getTransform() {
@@ -174,8 +166,13 @@ public class GameObject {
 
         // Dispose of all components.
         for (GameComponent c : components) {
-            removeComponent(c);
+            if (gameObjectListener != null) {
+                gameObjectListener.onComponentRemoved(c.getClass(), c);
+            }
+            c.dispose();
         }
+
+        components.clear();
         
         ID = -1;
         transform = null;
