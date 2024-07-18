@@ -15,6 +15,7 @@ import kugge.rendering.graphics.opengl.shaders.BlinnPhongShaderProgram;
 import kugge.rendering.graphics.opengl.shaders.ShaderProgram;
 import kugge.rendering.graphics.opengl.shaders.ShadowMapShaderProgram;
 import kugge.rendering.graphics.opengl.shaders.SkyBoxShaderProgram;
+import kugge.rendering.graphics.opengl.shaders.UnlitShaderProgram;
 
 public class OpenGLBindings implements GLEventListener {
     
@@ -23,6 +24,7 @@ public class OpenGLBindings implements GLEventListener {
     private ShaderProgram blinnPhongProgram;
     private ShaderProgram shadowMapProgram;
     private ShaderProgram skyboxProgram;
+    private ShaderProgram unlitProgram;
 
     private GLLocations locations;
 
@@ -49,8 +51,9 @@ public class OpenGLBindings implements GLEventListener {
     private void loadShaders(GL4 gl) {
         try {
             blinnPhongProgram = new BlinnPhongShaderProgram(gl, "basic.vert", "basic.frag");
-            shadowMapProgram = new ShadowMapShaderProgram(gl, "shadow.vert", "shadow.frag");
+            shadowMapProgram = new ShadowMapShaderProgram(gl, locations, "shadow.vert", "shadow.frag");
             skyboxProgram = new SkyBoxShaderProgram(gl, "skybox.vert", "skybox.frag", scene.getSkyBox());
+            unlitProgram = new UnlitShaderProgram(gl, locations, "unlit.vert", "unlit.frag");
         } catch (Exception e) {
             e.printStackTrace();
             throw new GLException("Failed to load shaders");
@@ -74,7 +77,10 @@ public class OpenGLBindings implements GLEventListener {
         // 2. Main render pass
         blinnPhongProgram.render(gl, scene, locations);
 
-        // 3. Skybox pass
+        // 3. Unlit pass
+        unlitProgram.render(gl, scene, locations);
+
+        // 4. Skybox pass
         skyboxProgram.render(gl, scene, locations);
     }
 
@@ -108,4 +114,6 @@ public class OpenGLBindings implements GLEventListener {
     public RenderScene getRenderScene() {
         return scene;
     }
+
+
 }

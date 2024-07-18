@@ -8,6 +8,7 @@ import org.joml.Vector4f;
 
 import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.GL4;
+import static com.jogamp.opengl.GL4.*;
 
 import kugge.rendering.core.objects.Texture;
 import kugge.rendering.core.objects.lights.DirectionalLight;
@@ -29,8 +30,8 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
 
     public BlinnPhongShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile) throws Exception {
         Shader[] shaders = new Shader[] {
-            new Shader(GL4.GL_VERTEX_SHADER, vertexShaderFile),
-            new Shader(GL4.GL_FRAGMENT_SHADER, fragmentShaderFile)
+            new Shader(GL_VERTEX_SHADER, vertexShaderFile),
+            new Shader(GL_FRAGMENT_SHADER, fragmentShaderFile)
         };
         this.programID = Shaders.loadShaders(shaders, gl);
     }
@@ -44,6 +45,7 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
     public void render(GL4 gl, RenderScene scene, GLLocations locations) {
         gl.glUseProgram(programID);
         gl.glBindVertexArray(locations.getMeshVAO());
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         // Set uniforms that are static for all instances
         int projectionMatrixLocation = unif(gl, "projectionMx");
@@ -87,15 +89,15 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
         }
 
         // Bind the shadow map
-        gl.glActiveTexture(GL4.GL_TEXTURE1);
-        gl.glBindTexture(GL4.GL_TEXTURE_2D, locations.getShadowMapTexture());
+        gl.glActiveTexture(GL_TEXTURE1);
+        gl.glBindTexture(GL_TEXTURE_2D, locations.getShadowMapTexture());
         gl.glUniform1i(unif(gl, "shadowMap"), 1);
 
         // Render all instances
         int previousMaterialID = -1;
         int previousMeshID = -1;
         int previousTextureID = -1;
-        for (RenderInstance instance : scene.getRenderInstances().parallelStream().filter(i -> i.isLit()).toList()) {
+        for (RenderInstance instance : scene.getRenderInstances().parallelStream().filter(i -> passesCondition(i)).toList()) {
                     
             if (previousMaterialID != instance.getMaterialID()) {
                 Material mat = scene.getMaterial(instance.getMaterialID());
@@ -120,15 +122,15 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
                     locations.loadMesh(gl, mesh);
                 }
 
-                gl.glBindBuffer(GL4.GL_ARRAY_BUFFER, locations.getMeshVertexLoc(mesh.getID()));
-                gl.glVertexAttribPointer(0, 3, GL4.GL_FLOAT, false, 0, 0);
+                gl.glBindBuffer(GL_ARRAY_BUFFER, locations.getMeshVertexLoc(mesh.getID()));
+                gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
                 gl.glEnableVertexAttribArray(0);
-                gl.glVertexAttribPointer(1, 2, GL4.GL_FLOAT, false, 0, mesh.getPositions().length * Float.BYTES);
+                gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, mesh.getPositions().length * Float.BYTES);
                 gl.glEnableVertexAttribArray(1);
-                gl.glVertexAttribPointer(2, 3, GL4.GL_FLOAT, false, 0, (mesh.getPositions().length + mesh.getTextureCoords().length) * Float.BYTES);
+                gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, (mesh.getPositions().length + mesh.getTextureCoords().length) * Float.BYTES);
                 gl.glEnableVertexAttribArray(2);
 
-                gl.glBindBuffer(GL4.GL_ELEMENT_ARRAY_BUFFER, locations.getMeshIndexLoc(mesh.getID()));
+                gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, locations.getMeshIndexLoc(mesh.getID()));
                 previousMeshID = mesh.getID();
             }
 
@@ -147,8 +149,8 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
                         locations.loadTexture(gl, texture);
                     }
 
-                    gl.glActiveTexture(GL4.GL_TEXTURE0);
-                    gl.glBindTexture(GL4.GL_TEXTURE_2D, locations.getTextureLocation(texture.getID()));
+                    gl.glActiveTexture(GL_TEXTURE0);
+                    gl.glBindTexture(GL_TEXTURE_2D, locations.getTextureLocation(texture.getID()));
                     gl.glUniform1i(unif(gl, "instanceTexture"), 0);
                     previousTextureID = instance.getTextureID();
                 }
@@ -160,7 +162,7 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
             gl.glUniformMatrix4fv(unif(gl, "modelMx"), 1, false, instance.getModelMatrix().get(matrixValueHelper));
 
             // Draw the mesh
-            gl.glDrawElements(GL4.GL_TRIANGLES, mesh.getNumIndices(), GL4.GL_UNSIGNED_INT, 0);
+            gl.glDrawElements(GL_TRIANGLES, mesh.getNumIndices(), GL_UNSIGNED_INT, 0);
         }
     }
 
@@ -183,5 +185,9 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
     @Override
     public void cleanup(GL4 gl) {
         gl.glDeleteProgram(programID);
+    }
+
+    public boolean passesCondition(RenderInstance instance) {
+        return instance.isLit();
     }
 }

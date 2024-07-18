@@ -33,7 +33,7 @@ public class ShadowMapShaderProgram implements ShaderProgram {
      * @param shadowHeight The height of the shadow map
      * @throws Exception If the shader program could not be created
      */
-    public ShadowMapShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile, int shadowWidth, int shadowHeight) throws Exception {
+    public ShadowMapShaderProgram(GL4 gl, GLLocations locations, String vertexShaderFile, String fragmentShaderFile, int shadowWidth, int shadowHeight) throws Exception {
         Shader[] shaders = new Shader[] {
             new Shader(GL_VERTEX_SHADER, vertexShaderFile),
             new Shader(GL_FRAGMENT_SHADER, fragmentShaderFile)
@@ -53,6 +53,7 @@ public class ShadowMapShaderProgram implements ShaderProgram {
         gl.glGenTextures(1, textures, 0);
         this.shadowTexture = textures[0];   
         gl.glBindTexture(GL_TEXTURE_2D, shadowTexture);
+        locations.setShadowMapTexture(shadowTexture);
 
         gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, null);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -73,6 +74,8 @@ public class ShadowMapShaderProgram implements ShaderProgram {
         } else {
             System.out.println("Framebuffer complete");
         }
+
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     /**
@@ -82,8 +85,8 @@ public class ShadowMapShaderProgram implements ShaderProgram {
      * @param fragmentShaderFile The fragment shader file name
      * @throws Exception If the shader program could not be created
      */
-    public ShadowMapShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile) throws Exception {
-        this(gl, vertexShaderFile, fragmentShaderFile, 1024, 1024);
+    public ShadowMapShaderProgram(GL4 gl, GLLocations locations, String vertexShaderFile, String fragmentShaderFile) throws Exception {
+        this(gl, locations, vertexShaderFile, fragmentShaderFile, 1024, 1024);
     }
 
     @Override
@@ -118,10 +121,12 @@ public class ShadowMapShaderProgram implements ShaderProgram {
         gl.glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
 
+
+
         // Set light space matrix since it is the same for all instances
         gl.glUniformMatrix4fv(unif(gl, "lightSpaceMx"), 1, false, scene.getLightSpaceMatrix().get(matrixValueHelper));
 
-        for (RenderInstance instance : scene.getRenderInstances().parallelStream().filter(elem -> elem.castsShadows()).toList()) {
+        for (RenderInstance instance : scene.getRenderInstances().stream().filter(i -> passesCondition(i)).toList()) {
             Mesh mesh = scene.getMesh(instance.getMeshID());
 
             if (mesh == null) {
@@ -146,13 +151,13 @@ public class ShadowMapShaderProgram implements ShaderProgram {
             // Set the model matrix
             instance.getModelMatrix().get(matrixValueHelper);
             gl.glUniformMatrix4fv(modelMxLoc, 1, false, matrixValueHelper);
-
+            
             // Draw the mesh
             gl.glDrawElements(GL_TRIANGLES, mesh.getNumIndices(), GL_UNSIGNED_INT, 0);
         }
 
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        gl.glClear(GL_DEPTH_BUFFER_BIT);
+        gl.glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     }
 
     /**
@@ -183,5 +188,9 @@ public class ShadowMapShaderProgram implements ShaderProgram {
         gl.glDeleteProgram(programID);
         gl.glDeleteFramebuffers(1, new int[] {shadowFBO}, 0);
         gl.glDeleteTextures(1, new int[] {shadowTexture}, 0);
+    }
+
+    public boolean passesCondition(RenderInstance instance) {
+        return instance.castsShadows();
     }
 }
