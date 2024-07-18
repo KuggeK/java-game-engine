@@ -10,6 +10,7 @@ public class ProjectPaths {
     private static String texturesPath = "textures/";
     private static String shadersPath = "shaders/";
     private static String scriptsPath = "scripts/";
+    private static String classesPath = "classes/";
 
     public static String getScenesPath() {
         return scenesPath;
@@ -64,5 +65,8 @@ public class ProjectPaths {
 
     public static String getScriptPath(String fileName) {
         return concatenatePath(scriptsPath, fileName);
+    }
+    public static String getClassesPath() {
+        return classesPath;
     }
 }

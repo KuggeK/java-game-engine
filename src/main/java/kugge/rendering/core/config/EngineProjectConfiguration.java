@@ -26,17 +26,25 @@ public class EngineProjectConfiguration extends WindowSettings {
     private String shadersPath;
     private String scriptsPath;
 
+    private static EngineProjectConfiguration instance;
     
-    public EngineProjectConfiguration(int width, int height, String title, boolean fullscreen, boolean resizable, int targetFPS) {
+    private EngineProjectConfiguration(int width, int height, String title, boolean fullscreen, boolean resizable, int targetFPS) {
         super(width, height, title, fullscreen, resizable, targetFPS);
     }
 
     public static EngineProjectConfiguration loadProjectConfiguration(String path) throws IOException, URISyntaxException {
         String json = Files.readString(Paths.get(path));
-        Gson gson =new Gson();
-        return gson.fromJson(json, EngineProjectConfiguration.class);
+        Gson gson = new Gson();
+        instance = gson.fromJson(json, EngineProjectConfiguration.class);
+        populateGlobalPaths(instance);
+        return instance;
     }
 
+    public static EngineProjectConfiguration getProjectConfiguration() {
+        return instance;
+    }
+
+    
     public static void populateGlobalPaths(EngineProjectConfiguration config) {
         ProjectPaths.setScenesPath(config.getScenesPath());
         ProjectPaths.setMeshesPath(config.getMeshesPath());
