@@ -25,6 +25,10 @@ public abstract class GameComponent {
         this.transform = null;
         this.gameObject = null;
     }
+
+    public GameObject getGameObject() {
+        return gameObject;
+    }
     
     /**
      * Strip the component of its references to it's game object.
