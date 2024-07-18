@@ -191,16 +191,17 @@ public class PhysicsBody extends GameComponent {
 
     /**
      * Set the mass of the physics body. This only has an effect if the body is not kinematic 
-     * because kinematic bodies are treated as having infinite mass.
+     * because kinematic bodies are treated as having infinite mass. 
+     * The mass will however be stored and used if the body is later set to be dynamic.
      * @param mass The mass to set.
      */
     public void setMass(double newMass) {
+        this.mass = newMass;
+
         // Setting the mass on a kinematic body makes it dynamic in ODE.
         if (isKinematic) {
             return;
         }
-
-        this.mass = newMass;
 
         if (body == null) {
             return;

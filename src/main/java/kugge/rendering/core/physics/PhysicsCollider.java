@@ -64,10 +64,17 @@ public class PhysicsCollider extends GameComponent {
     }
 
     public void registerCollisionListener(Consumer<PhysicsCollider> listener) {
+        // Lazy initialization, because component fields don't get initialized correctly
+        if (collisionListeners == null) {
+            collisionListeners = new HashSet<>();
+        }
         collisionListeners.add(listener);
     }
 
     public void unregisterCollisionListener(Consumer<PhysicsCollider> listener) {
+        if (collisionListeners == null) {
+            return;
+        }
         collisionListeners.remove(listener);
     }
 
