@@ -1,0 +1,143 @@
+{
+    "ID": 1,
+    "gameObjects": [
+        {
+            "ID": 1,
+            "transform": {
+                "position": [
+                    2,
+                    5,
+                    -10
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "tags": [
+                "ball"
+            ],
+            "components": {
+                "kugge.rendering.core.physics.PhysicsBody": {
+                    "ID": 1,
+                    "restitution": 1,
+                    "kinematic": false,
+                    "mass": 1,
+                    "colliderID": 1,
+                    "influencedByGravity": true
+                },
+                "kugge.rendering.core.physics.PhysicsCollider": {
+                    "ID": 1,
+                    "colliderType": "SPHERE",
+                    "collisionListeners": []
+                },
+                "kugge.rendering.core.objects.rendering.RenderInstance": {
+                    "ID": 1,
+                    "meshID": 2,
+                    "materialID": 3,
+                    "texturingEnabled": false,
+                    "textureID": -1,
+                    "normalMapEnabled": false,
+                    "normalMapID": -1,
+                    "lit": true,
+                    "castsShadows": true
+                }
+            }
+        },
+        {
+            "ID": 2,
+            "transform": {
+                "position": [
+                    0,
+                    -3,
+                    -10
+                ],
+                "scale": [
+                    10,
+                    0.5,
+                    10
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "tags": [
+                "ground"
+            ],
+            "components": {
+                
+                "kugge.rendering.core.physics.PhysicsBody": {
+                    "ID": 2,
+                    "restitution": 0.5,
+                    "isKinematic": false,
+                    "mass": 10,
+                    "colliderID": 2,
+                    "influencedByGravity": true
+                },
+                "kugge.rendering.core.physics.PhysicsCollider": {
+                    "ID": 2,
+                    "colliderType": "BOX",
+                    "collisionListeners": []
+                },
+                "kugge.rendering.core.objects.rendering.RenderInstance": {
+                    "ID": 2,
+                    "meshID": 1,
+                    "materialID": 1,
+                    "texturingEnabled": false,
+                    "textureID": 1,
+                    "normalMapEnabled": false,
+                    "normalMapID": -1,
+                    "lit": true,
+                    "castsShadows": true
+                },
+                "kugge.rendering.core.scripting.CollideScript": {}
+            }
+        },
+        {
+            "ID": 3,
+            "transform": {
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "tags": [
+                "camera"
+            ],
+            "components": {
+                "kugge.rendering.core.objects.Camera": {
+                    "fov": 60,
+                    "near": 0.1,
+                    "far": 1010,
+                    "orthographic": false
+                },
+                "kugge.rendering.core.scripting.BasicControls": {},
+                "kugge.rendering.GenericController": {
+                    "velocity": 0.01
+                }
+            }
+        }
+    ]
+}

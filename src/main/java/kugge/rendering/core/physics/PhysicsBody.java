@@ -32,6 +32,9 @@ public class PhysicsBody extends GameComponent {
     @ComponentField
     private int colliderID;
 
+    @ComponentField
+    private boolean influencedByGravity;
+
     private DBody body;
 
     public PhysicsBody(int ID, boolean isKinematic) {
@@ -40,6 +43,7 @@ public class PhysicsBody extends GameComponent {
         this.isKinematic = isKinematic;
         this.restitution = 0.5;
         this.mass = 1;
+        this.influencedByGravity = !isKinematic;
     }
 
     public int getID() {
@@ -52,6 +56,25 @@ public class PhysicsBody extends GameComponent {
 
     public int getColliderID() {
         return colliderID;
+    }
+
+    /**
+     * Get whether the physics body is influenced by gravity or not. 
+     * Note that this only has an effect if the body is not kinematic.
+     * @return Whether the physics body is influenced by gravity or not.
+     */
+    public boolean isInfluencedByGravity() {
+        return influencedByGravity;
+    }
+
+    /**
+     * Set whether the physics body is influenced by gravity or not. 
+     * This only has an effect if the body is not kinematic.
+     * @param influencedByGravity Whether the physics body should be influenced by gravity or not.
+     */
+    public void setInfluencedByGravity(boolean influencedByGravity) {
+        body.setGravityMode(influencedByGravity);
+        this.influencedByGravity = influencedByGravity;
     }
 
     /**
@@ -144,13 +167,14 @@ public class PhysicsBody extends GameComponent {
      * Set whether the physics body is kinematic or not.
      * @param isKinematic True if the physics body should be kinematic, false otherwise.
      */
-    public void setKinematic(boolean isKinematic) {
-        this.isKinematic = isKinematic;
+    public void setKinematic(boolean kinematic) {
+        this.isKinematic = kinematic;
         if (isKinematic) {
             body.setKinematic();
         } else {
             body.setDynamic();
         }
+        setMass(mass);
     }
 
     public double getRestitution() {
@@ -213,13 +237,14 @@ public class PhysicsBody extends GameComponent {
         physBody.body = odeBody;
         physBody.body.setData(physBody);
         
-        // Update the mass and transform of the ODE body to match the physics body.
+        // Update the properties of the ODE body to match the physics body.
         physBody.setMass(physBody.getMass());
         if (physBody.isKinematic) {
             odeBody.setKinematic();
         } else {
             odeBody.setDynamic();
         }
+        odeBody.setGravityMode(physBody.influencedByGravity);
 
         physBody.syncToGameObject();
     }
