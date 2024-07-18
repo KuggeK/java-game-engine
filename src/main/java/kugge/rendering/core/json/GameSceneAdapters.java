@@ -104,9 +104,12 @@ public class GameSceneAdapters {
             }
 
             gameObject.setTransform(transform);
-            for (String tag : tags) {
-                gameObject.addTag(tag);
+            if (tags != null) {
+                for (String tag : tags) {
+                    gameObject.addTag(tag);
+                }
             }
+            
 
             return gameObject;
         }

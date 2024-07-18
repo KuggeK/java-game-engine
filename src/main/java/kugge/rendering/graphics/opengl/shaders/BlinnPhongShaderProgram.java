@@ -93,6 +93,8 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
         gl.glBindTexture(GL_TEXTURE_2D, locations.getShadowMapTexture());
         gl.glUniform1i(unif(gl, "shadowMap"), 1);
 
+        gl.glActiveTexture(GL_TEXTURE0);
+
         // Render all instances
         int previousMaterialID = -1;
         int previousMeshID = -1;
@@ -149,7 +151,6 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
                         locations.loadTexture(gl, texture);
                     }
 
-                    gl.glActiveTexture(GL_TEXTURE0);
                     gl.glBindTexture(GL_TEXTURE_2D, locations.getTextureLocation(texture.getID()));
                     gl.glUniform1i(unif(gl, "instanceTexture"), 0);
                     previousTextureID = instance.getTextureID();
