@@ -1,0 +1,1 @@
+INSERT INTO mesh (positions, texture_coordinates, normals, indices) VALUES (?, ?, ?, ?) RETURNING id;

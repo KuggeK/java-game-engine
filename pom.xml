@@ -57,6 +57,12 @@
       <artifactId>core</artifactId>
       <version>0.5.3</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc -->
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+      <version>3.46.0.0</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -65,11 +71,28 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.2.0</version>
         <configuration>
-          <mainClass>kugge.rendering.RenderingEngine</mainClass>
+          <mainClass>kugge.rendering.GameEngine</mainClass>
           <arguments>
             <argument>defaultProject.json</argument>
           </arguments>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.jolira</groupId>
+        <artifactId>onejar-maven-plugin</artifactId>
+        <version>1.4.4</version>
+        <executions>
+          <execution>
+            <configuration>
+              <mainClass>kugge.rendering.GameEngine</mainClass>
+              <onejarVersion>0.97</onejarVersion>
+              <attachToBuild>true</attachToBuild>
+            </configuration>
+            <goals>
+              <goal>one-jar</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

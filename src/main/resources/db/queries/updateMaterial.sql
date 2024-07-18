@@ -1,0 +1,1 @@
+UPDATE material SET ambient = ?, diffuse = ?, specular = ?, shininess = ? WHERE id = ? ;

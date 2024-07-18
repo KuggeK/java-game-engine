@@ -1,0 +1,1 @@
+DELETE FROM mesh WHERE id = ?;
