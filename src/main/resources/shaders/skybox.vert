@@ -1,9 +1,9 @@
 #version 430 core
 
-layout (location = 0) in vec3 vPosition;
-
 uniform mat4 viewMx;
 uniform mat4 projectionMx;
+
+layout (location = 0) in vec3 vPosition;
 
 out vec3 varyingTexCoord;
 

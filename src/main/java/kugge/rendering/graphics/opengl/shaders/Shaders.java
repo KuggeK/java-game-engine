@@ -1,4 +1,4 @@
-package kugge.rendering.graphics.opengl;
+package kugge.rendering.graphics.opengl.shaders;
 
 import java.io.IOException;
 import java.net.URISyntaxException;

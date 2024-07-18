@@ -29,9 +29,16 @@ struct DirectionalLight {
     vec3 direction;
 };
 
+struct Material {
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+    float shininess;
+};
+
 // Uniforms used by fragment shader.
 uniform vec3 viewPos;
-uniform sampler2DArray textureArray;
+uniform sampler2D instanceTexture;
 
 uniform sampler2D shadowMap;
 
@@ -42,12 +49,8 @@ uniform PositionalLight posLights[MAX_LIGHTS];
 uniform vec4 globalAmbient;
 uniform DirectionalLight dirLight;
 
-in Material {
-    flat in vec4 ambient;
-    flat in vec4 diffuse;
-    flat in vec4 specular;
-    flat in float shininess;
-} material;
+uniform Material material;
+uniform bool textured;
 
 // Varying means these will be interpolated.
 in Varying {
@@ -56,9 +59,6 @@ in Varying {
     in vec4 position;
     in vec4 posLightSpace;
 } coords;
-
-// Index into the texture array for instance's texture.
-flat in int flatTextureIdx;
 
 Light CalculateDirLight(DirectionalLight dirLight, vec3 N, vec3 V);
 Light CalculatePosLight(PositionalLight light, vec4 fragPos, vec3 N, vec3 V);
@@ -72,10 +72,10 @@ void main() {
 
     // Texture contribution
     vec4 textureColor;
-    if (flatTextureIdx == -1) {
-        textureColor = vec4(1.0);
+    if (textured) {
+        textureColor = texture(instanceTexture, coords.texCoord);
     } else {
-        textureColor = texture(textureArray, vec3(coords.texCoord, flatTextureIdx));
+        textureColor = vec4(1.0);
     }
 
     // Calculate the value of the contribution of all lights
@@ -106,7 +106,7 @@ float CalculateShadow() {
 
     float currentDepth = projCoords.z;
 
-    float bias = 0.00005;
+    float bias = 0.0001;
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
 
