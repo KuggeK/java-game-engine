@@ -5,16 +5,13 @@ import org.joml.Vector3f;
 import java.awt.event.KeyEvent;
 
 import kugge.rendering.core.KeyInput;
-import kugge.rendering.core.objects.Camera;
+import kugge.rendering.core.objects.ComponentField;
+import kugge.rendering.core.scripting.Script;
 
-public class CameraController implements Updateable {
+public class GenericController extends Script {
     
-    private Camera camera;
+    @ComponentField
     private float velocity = 0.01f;
-
-    public CameraController(Camera camera) {
-        this.camera = camera;
-    }
 
     @Override
     public void update(KeyInput keyInput, float deltaTime) {
@@ -48,20 +45,20 @@ public class CameraController implements Updateable {
 
         if (forwardVelocity != 0) {
             forwardVelocity *= deltaTime;
-            Vector3f forward = camera.getTransform().getForward();
-            camera.getTransform().moveTowards(forward, forwardVelocity);
+            Vector3f forward = transform.getForward();
+            transform.moveTowards(forward, forwardVelocity);
         }
         if (horizontalVelocity != 0) {          
             horizontalVelocity *= deltaTime;
-            Vector3f right = camera.getTransform().getRight();
+            Vector3f right = transform.getRight();
             right.y = 0;
             right.normalize();
-            camera.getTransform().moveTowards(right, horizontalVelocity);
+            transform.moveTowards(right, horizontalVelocity);
         } 
         if (verticalVelocity != 0) {
             verticalVelocity *= deltaTime;
             Vector3f up = new Vector3f(0, 1, 0);
-            camera.getTransform().moveTowards(up, verticalVelocity);
+            transform.moveTowards(up, verticalVelocity);
         }
 
         // Rotation
@@ -84,25 +81,22 @@ public class CameraController implements Updateable {
         }
 
         if (xRot != 0) {
-            camera.getTransform().rotate(xRot * deltaTime, 0, 0);
+            transform.rotate(xRot * deltaTime, 0, 0);
         }
 
         if (yRot != 0) {
             // When rotating the camera we want to rotate the camera around the 
             // y-axis of the world, not the y-axis of the camera.
-            camera.getTransform().getRotation().rotateLocalY(yRot * deltaTime);
+            transform.getRotation().rotateLocalY(yRot * deltaTime);
         }
-    }
-
-    public Camera getCamera() {
-        return camera;
-    }
-
-    public void setCamera(Camera camera) {
-        this.camera = camera;
     }
 
     public void setVelocity(float velocity) {
         this.velocity = velocity;
+    }
+
+    @Override
+    public void start() {
+        System.out.println("GenericController started");
     }
 }

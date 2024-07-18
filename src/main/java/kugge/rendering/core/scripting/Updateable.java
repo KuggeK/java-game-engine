@@ -1,4 +1,4 @@
-package kugge.rendering;
+package kugge.rendering.core.scripting;
 
 import kugge.rendering.core.KeyInput;
 

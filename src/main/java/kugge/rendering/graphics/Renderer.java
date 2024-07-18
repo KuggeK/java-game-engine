@@ -1,6 +1,6 @@
 package kugge.rendering.graphics;
 
-import kugge.rendering.core.objects.RenderScene;
+import kugge.rendering.core.objects.rendering.RenderScene;
 
 /**
  * Represents a real-time renderer that can render a scene with a given camera and objects.

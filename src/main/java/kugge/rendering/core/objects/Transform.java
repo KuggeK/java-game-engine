@@ -9,6 +9,7 @@ public class Transform {
     private Vector3f position;
     private Quaternionf rotation;
     private Vector3f scale;
+
     private Vector3f helperVector;
 
     private Matrix4f modelMatrix;
@@ -17,7 +18,7 @@ public class Transform {
     public Transform() {
         position = new Vector3f();
         rotation = new Quaternionf();
-        scale = new Vector3f();
+        scale = new Vector3f(1, 1, 1);
         helperVector = new Vector3f();
         modelMatrix = new Matrix4f();
         modelMatrixChanged = true;
@@ -158,6 +159,13 @@ public class Transform {
         Vector3f right = new Vector3f(0, 1, 0).cross(forward).normalize();
         Vector3f up = new Vector3f(forward).cross(right).normalize();
         rotation.identity().lookAlong(forward, up);
+        modelMatrixChanged = true;
+    }
+
+    public void set(Transform transform) {
+        this.position.set(transform.position);
+        this.rotation.set(transform.rotation);
+        this.scale.set(transform.scale);
         modelMatrixChanged = true;
     }
 }

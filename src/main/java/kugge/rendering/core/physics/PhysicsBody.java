@@ -10,25 +10,34 @@ import org.ode4j.ode.DWorld;
 import org.ode4j.ode.OdeHelper;
 import org.ode4j.ode.internal.DxMass;
 
+import kugge.rendering.core.objects.ComponentField;
+import kugge.rendering.core.objects.GameComponent;
+
 /**
  * PhysicsBody
  */
-public class PhysicsBody {
+public class PhysicsBody extends GameComponent {
+    @ComponentField
     private int ID;
-    private DBody body;
-    private boolean isKinematic = false;
-    private double restitution;
-    private double mass;
 
-    public PhysicsBody(int ID, boolean isKinematic, DWorld world) {
+    @ComponentField
+    private boolean isKinematic = false;
+
+    @ComponentField
+    private double restitution;
+    
+    @ComponentField
+    private double mass;
+    
+    @ComponentField
+    private int colliderID;
+
+    private DBody body;
+
+    public PhysicsBody(int ID, boolean isKinematic) {
+        super();
         this.ID = ID;
-        this.body = OdeHelper.createBody(world);
         this.isKinematic = isKinematic;
-        if (isKinematic) {
-            body.setKinematic();
-        } else {
-            body.setDynamic();
-        }
         this.restitution = 0.5;
         this.mass = 1;
     }
@@ -37,51 +46,104 @@ public class PhysicsBody {
         return ID;
     }
 
-    public DBody getBody() {
+    protected DBody getBody() {
         return body;
     }
 
-    public Vector3f getPosition() {
+    public int getColliderID() {
+        return colliderID;
+    }
+
+    /**
+     * Get the position of the physics body, which may differ from the position of the game object.
+     * @return The position of the physics body.
+     */
+    public Vector3f getPhysPosition() {
         DVector3C pos = body.getPosition();
         return new Vector3f((float) pos.get0(), (float) pos.get1(), (float) pos.get2());
     }
 
-    public Vector3f getPosition(Vector3f dest) {
+    /**
+     * Stores the position of the physics body, which may differ from the position of the game object,
+     * into the given destination vector.
+     * @param dest The destination vector to store the position in.
+     * @return The destination vector.
+     */
+    public Vector3f getPhysPosition(Vector3f dest) {
         DVector3C pos = body.getPosition();
         return dest.set((float) pos.get0(), (float) pos.get1(), (float) pos.get2());
     }
 
-    public void setPosition(Vector3f position) {
+    /**
+     * Set the position of the physics body, which may differ from the position of the game object.
+     * @param position The position to set.
+     */
+    public void setPhysPosition(Vector3f position) {
         body.setPosition(position.x, position.y, position.z);
     }
 
-    public void setPosition(float x, float y, float z) {
+    /**
+     * Set the position of the physics body, which may differ from the position of the game object.
+     * @param x The x-coordinate of the position.
+     * @param y The y-coordinate of the position.
+     * @param z The z-coordinate of the position.
+     */
+    public void setPhysPosition(float x, float y, float z) {
         body.setPosition(x, y, z);
     }
 
-    public Quaternionf getRotation() {
-        return getRotation(new Quaternionf());
+    /**
+     * Get the rotation of the physics body, which may differ from the rotation of the game object.
+     * @return
+     */
+    public Quaternionf getPhysRotation() {
+        return getPhysRotation(new Quaternionf());
     }
 
-    public Quaternionf getRotation(Quaternionf dest) {
+    /**
+     * Stores the rotation of the physics body, which may differ from the rotation of the game object,
+     * into the given destination quaternion.
+     * @param dest The destination quaternion to store the rotation in.
+     * @return The destination quaternion.
+     */
+    public Quaternionf getPhysRotation(Quaternionf dest) {
         DQuaternionC quat = body.getQuaternion();
         dest.set((float)quat.get1(), (float)quat.get2(), (float)quat.get3(), (float)quat.get0());
         return dest;
     }
 
-    public void setRotation(Quaternionf rot) {
+    /**
+     * Set the rotation of the physics body, which may differ from the rotation of the game object.
+     * @param rot The rotation to set.
+     */
+    public void setPhysRotation(Quaternionf rot) {
         DQuaternion quat = new DQuaternion(rot.w, rot.x, rot.y, rot.z);
         body.setQuaternion(quat);
     }
 
-    public void setRotation(float x, float y, float z, float w) {
-        setRotation(new Quaternionf(x, y, z, w));
+    /**
+     * Set the rotation of the physics body, which may differ from the rotation of the game object.
+     * @param x The x-coordinate of the rotation.
+     * @param y The y-coordinate of the rotation.
+     * @param z The z-coordinate of the rotation.
+     * @param w The w-coordinate of the rotation.
+     */
+    public void setPhysRotation(float x, float y, float z, float w) {
+        setPhysRotation(new Quaternionf(x, y, z, w));
     }
 
+    /**
+     * Returns whether the physics body is kinematic or not.
+     * @return True if the physics body is kinematic, false otherwise.
+     */
     public boolean isKinematic() {
         return isKinematic;
     }
 
+    /**
+     * Set whether the physics body is kinematic or not.
+     * @param isKinematic True if the physics body should be kinematic, false otherwise.
+     */
     public void setKinematic(boolean isKinematic) {
         this.isKinematic = isKinematic;
         if (isKinematic) {
@@ -103,14 +165,97 @@ public class PhysicsBody {
         return mass;
     }
 
-    public void setMass(double mass) {
+    /**
+     * Set the mass of the physics body. This only has an effect if the body is not kinematic 
+     * because kinematic bodies are treated as having infinite mass.
+     * @param mass The mass to set.
+     */
+    public void setMass(double newMass) {
         // Setting the mass on a kinematic body makes it dynamic in ODE.
         if (isKinematic) {
             return;
         }
+
+        this.mass = newMass;
+
+        if (body == null) {
+            return;
+        }
         
-        DxMass massData = (DxMass)body.getMass();
-        massData.setMass(mass);
-        body.setMass(massData);
+        DxMass odeMass = (DxMass)body.getMass();
+        odeMass.setMass(newMass);
+        body.setMass(odeMass);
     }
+
+    /**
+     * Synchronize the position and rotation of the physics body to the position and rotation of the game object.
+     */
+    public void syncToGameObject() {
+        setPhysPosition(transform.getPosition());
+        setPhysRotation(transform.getRotation());
+    }
+
+    /**
+     * Synchronize the position and rotation of the game object to the position and rotation of the physics body.
+     */
+    public void syncToPhysicsBody() {
+        transform.setPosition(getPhysPosition());
+        transform.setRotation(getPhysRotation());
+    }
+
+    /**
+     * Link the physics body to the given ODE world so that it can participate in the physics simulation.
+     * @param physBody The physics body to link.
+     * @param world The ODE world to link to.
+     */
+    public static void linkToWorld(PhysicsBody physBody, DWorld world) {
+        DBody odeBody = OdeHelper.createBody(world);
+        physBody.body = odeBody;
+        physBody.body.setData(physBody);
+        
+        // Update the mass and transform of the ODE body to match the physics body.
+        physBody.setMass(physBody.getMass());
+        if (physBody.isKinematic) {
+            odeBody.setKinematic();
+        } else {
+            odeBody.setDynamic();
+        }
+
+        physBody.syncToGameObject();
+    }
+
+    public void setLinearVel(float x, float y, float z) {
+        body.setLinearVel(x, y, z);
+    }
+    public void setLinearVel(Vector3f vel) {
+        body.setLinearVel(vel.x, vel.y, vel.z);
+    }
+    public void addLinearVel(float x, float y, float z) {
+        body.addLinearVel(x, y, z);
+    }
+    public void addLinearVel(Vector3f vel) {
+        body.addLinearVel(vel.x, vel.y, vel.z);
+    }
+    public void setAngularVel(float x, float y, float z) {
+        body.setAngularVel(x, y, z);
+    }
+    public void setAngularVel(Vector3f vel) {
+        body.setAngularVel(vel.x, vel.y, vel.z);
+    }
+    public void addAngularVel(float x, float y, float z) {
+        DVector3C currentVel = body.getAngularVel();
+        body.setAngularVel(currentVel.get0() + x, currentVel.get1() + y, currentVel.get2() + z);
+    }
+    public void addAngularVel(Vector3f vel) {
+        DVector3C currentVel = body.getAngularVel();
+        body.setAngularVel(currentVel.get0() + vel.x, currentVel.get1() + vel.y, currentVel.get2() + vel.z);
+    }
+    public void setLinearDamping(float damping) {
+        body.setLinearDamping(damping);
+    }
+    public void setAngularDamping(float damping) {
+        body.setAngularDamping(damping);
+    }
+    
+
 }

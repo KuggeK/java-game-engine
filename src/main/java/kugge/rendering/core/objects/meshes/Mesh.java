@@ -1,8 +1,6 @@
 package kugge.rendering.core.objects.meshes;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import kugge.rendering.core.objects.materials.Material;
@@ -33,17 +31,11 @@ public class Mesh {
     private String fileName;
 
     /**
-     * Textures that can be applied to the mesh. Can be empty. These textureIDs should all
-     * be the same size and have the same properties.
-     */
-    private List<Integer> textureIDs = new ArrayList<>();
-
-    /**
      * Texture parameters for the textureIDs. Can be empty.
      */
     private Map<Integer, Integer> textureParameters;
 
-    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, List<Integer> textureIDs, Map<Integer, Integer> textureParameters, String fileName) {
+    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, Map<Integer, Integer> textureParameters, String fileName) {
         if (positions.length % 3 != 0) {
             throw new IllegalArgumentException("Positions array must have a length that is a multiple of 3");
         }
@@ -65,7 +57,6 @@ public class Mesh {
         this.normals = normals;
         this.indices = indices;
         this.material = material;
-        this.textureIDs = textureIDs;
         this.textureParameters = textureParameters;
 
         this.numVertices = positions.length / 3;
@@ -75,7 +66,7 @@ public class Mesh {
     }
 
     public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material) {
-        this(ID, positions, textureCoords, normals, indices, material, new ArrayList<>(), new HashMap<>(), null);
+        this(ID, positions, textureCoords, normals, indices, material, new HashMap<>(), null);
     }
 
     public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices) {
@@ -144,30 +135,6 @@ public class Mesh {
 
     public void setMaterial(Material material) {
         this.material = material;
-    }
-
-    public List<Integer> getTextureIDs() {
-        return textureIDs;
-    }
-
-    public void setTextureIDs(List<Integer> textureIDs) {
-        this.textureIDs = textureIDs;
-    }
-
-    public void addTexture(Integer textureID) {
-        textureIDs.add(textureID);
-    }
-
-    public void removeTexture(Integer textureID) {
-        textureIDs.remove(textureID);
-    }
-
-    public void removeTexture(int index) {
-        textureIDs.remove(index);
-    }
-
-    public void clearTextures() {
-        textureIDs.clear();
     }
 
     public Map<Integer, Integer> getTextureParameters() {
