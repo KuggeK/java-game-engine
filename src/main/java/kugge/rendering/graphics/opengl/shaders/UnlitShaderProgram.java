@@ -66,7 +66,8 @@ public class UnlitShaderProgram implements ShaderProgram {
         int viewMatrixLocation = unif(gl, "viewMx");
         gl.glUniformMatrix4fv(viewMatrixLocation, 1, false, scene.getViewMatrix().get(matrixValueHelper));
 
-        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glActiveTexture(GL_TEXTURE1);
+        gl.glUniform1i(unif(gl, "instanceTexture"), 1);
 
         // Render all instances
         int previousMaterialID = -1;
@@ -124,6 +125,12 @@ public class UnlitShaderProgram implements ShaderProgram {
                     gl.glBindTexture(GL_TEXTURE_2D, locations.getTextureLocation(texture.getID()));
                     previousTextureID = texture.getID();
                 }
+
+                for (var param : instance.getTextureParameters().entrySet()) {
+                    System.out.println(param.getKey() + " " + param.getValue());
+                    gl.glTexParameteri(GL_TEXTURE_2D, param.getKey(), param.getValue());
+                }
+
             } else {
                 gl.glUniform1i(unif(gl, "textured"), 0);
             }

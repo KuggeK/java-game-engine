@@ -1,5 +1,8 @@
 package kugge.rendering.core.objects.rendering;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.joml.Matrix4f;
 
 import kugge.rendering.core.objects.ComponentField;
@@ -38,6 +41,9 @@ public class RenderInstance extends GameComponent {
     @ComponentField
     private boolean castsShadows;
 
+    @ComponentField
+    private Map<Integer, Integer> textureParameters;
+
     public RenderInstance(int ID, GameObject gameObject) {
         super(gameObject);
         this.ID = ID;
@@ -49,6 +55,7 @@ public class RenderInstance extends GameComponent {
         this.normalMapID = -1;
         this.lit = true;
         this.castsShadows = true;
+        this.textureParameters = new HashMap<>();
     }
 
     public int getID() {
@@ -129,5 +136,21 @@ public class RenderInstance extends GameComponent {
 
     public void setCastsShadows(boolean castsShadows) {
         this.castsShadows = castsShadows;
+    }
+
+    public Map<Integer, Integer> getTextureParameters() {
+        return textureParameters;
+    }
+
+    public void addTextureParameter(int key, int value) {
+        textureParameters.put(key, value);
+    }
+
+    public void removeTextureParameter(int key) {
+        textureParameters.remove(key);
+    }
+
+    public void clearTextureParameters() {
+        textureParameters.clear();
     }
 }

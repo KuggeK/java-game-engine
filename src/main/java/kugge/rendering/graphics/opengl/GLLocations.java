@@ -206,7 +206,7 @@ public class GLLocations {
         gl.glTexImage2D(
             GL_TEXTURE_2D, 0, GL_RGBA8, 
             texture.getWidth(), texture.getHeight(), 0, 
-            GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, Buffers.newDirectIntBuffer(textureName)
+            GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, Buffers.newDirectIntBuffer(texture.getPixels())
         );
 
         setTextureLocation(texture.getID(), textureName[0]);

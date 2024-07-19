@@ -8,6 +8,7 @@ import org.joml.Vector4f;
 
 import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.GL4;
+
 import static com.jogamp.opengl.GL4.*;
 
 import kugge.rendering.core.objects.Texture;
@@ -155,6 +156,11 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
                     gl.glUniform1i(unif(gl, "instanceTexture"), 0);
                     previousTextureID = instance.getTextureID();
                 }
+
+                for (var param : instance.getTextureParameters().entrySet()) {
+                    gl.glTexParameteri(GL_TEXTURE_2D, param.getKey(), param.getValue());
+                }
+
             } else {
                 gl.glUniform1i(unif(gl, "textured"), 0);
             }
