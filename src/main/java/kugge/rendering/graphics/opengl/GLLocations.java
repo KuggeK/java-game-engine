@@ -10,6 +10,7 @@ import static com.jogamp.opengl.GL4.*;
 
 import kugge.rendering.core.objects.Texture;
 import kugge.rendering.core.objects.meshes.Mesh;
+import kugge.rendering.core.objects.rendering.RenderInstance;
 
 public class GLLocations {
     
@@ -210,5 +211,33 @@ public class GLLocations {
         );
 
         setTextureLocation(texture.getID(), textureName[0]);
+    }
+
+    /**
+     * Sets up a texture unit to an instance's texture and texture parameters.
+     * @param gl The OpenGL context.
+     * @param instance The render instance.
+     * @param textureUnit The texture unit to set up.
+     * @return True if the texture unit was set up successfully, false otherwise.
+     */
+    public boolean setupTextureUnit(GL4 gl, RenderInstance instance, int textureUnit) {
+        int textureName = getTextureLocation(instance.getTextureID());
+
+        if (textureName == -1 || textureUnit < 0 || textureUnit >= activeTextureUnits.length) {
+            return false;
+        }
+
+        gl.glActiveTexture(GL_TEXTURE0 + textureUnit);
+
+        if (activeTextureUnits[textureUnit] != textureName) {
+            gl.glBindTexture(GL_TEXTURE_2D, textureName);
+            activeTextureUnits[textureUnit] = textureName;
+        }
+
+        for (var param : instance.getTextureParameters().entrySet()) {
+            gl.glTexParameteri(GL_TEXTURE_2D, param.getKey(), param.getValue());
+        }
+
+        return true;
     }
 }

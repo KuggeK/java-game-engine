@@ -90,16 +90,17 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
         }
 
         // Bind the shadow map
-        gl.glActiveTexture(GL_TEXTURE1);
+        int shadowTextureUnit = 0;
+        gl.glActiveTexture(GL_TEXTURE0 + shadowTextureUnit);
         gl.glBindTexture(GL_TEXTURE_2D, locations.getShadowMapTexture());
-        gl.glUniform1i(unif(gl, "shadowMap"), 1);
+        gl.glUniform1i(unif(gl, "shadowMap"), shadowTextureUnit);
 
-        gl.glActiveTexture(GL_TEXTURE0);
+        int instanceTextureUnit = 1;
+        gl.glUniform1i(unif(gl, "instanceTexture"), instanceTextureUnit);
 
         // Render all instances
         int previousMaterialID = -1;
         int previousMeshID = -1;
-        int previousTextureID = -1;
         for (RenderInstance instance : scene.getRenderInstances().parallelStream().filter(i -> passesCondition(i)).toList()) {
                     
             if (previousMaterialID != instance.getMaterialID()) {
@@ -143,24 +144,17 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
             }
 
             if (texture != null) {
-                gl.glUniform1i(unif(gl, "textured"), 1);
-
-                // If the texture has changed, bind the new texture
-                if (previousTextureID != texture.getID()) {
-                    // Load the texture into the GPU if it hasn't been loaded yet
-                    if (locations.getTextureLocation(texture.getID()) == -1) {
-                        locations.loadTexture(gl, texture);
-                    }
-
-                    gl.glBindTexture(GL_TEXTURE_2D, locations.getTextureLocation(texture.getID()));
-                    gl.glUniform1i(unif(gl, "instanceTexture"), 0);
-                    previousTextureID = instance.getTextureID();
+                if (locations.getTextureLocation(texture.getID()) == -1) {
+                    locations.loadTexture(gl, texture);
                 }
 
-                for (var param : instance.getTextureParameters().entrySet()) {
-                    gl.glTexParameteri(GL_TEXTURE_2D, param.getKey(), param.getValue());
-                }
+                boolean textureActive = locations.setupTextureUnit(gl, instance, instanceTextureUnit);
 
+                if (!textureActive) {
+                    gl.glUniform1i(unif(gl, "textured"), 0);
+                } else {
+                    gl.glUniform1i(unif(gl, "textured"), 1);
+                }
             } else {
                 gl.glUniform1i(unif(gl, "textured"), 0);
             }

@@ -66,13 +66,12 @@ public class UnlitShaderProgram implements ShaderProgram {
         int viewMatrixLocation = unif(gl, "viewMx");
         gl.glUniformMatrix4fv(viewMatrixLocation, 1, false, scene.getViewMatrix().get(matrixValueHelper));
 
-        gl.glActiveTexture(GL_TEXTURE1);
-        gl.glUniform1i(unif(gl, "instanceTexture"), 1);
+        int instanceTextureUnit = 1;
+        gl.glUniform1i(unif(gl, "instanceTexture"), instanceTextureUnit);
 
         // Render all instances
         int previousMaterialID = -1;
         int previousMeshID = -1;
-        int previousTextureID = -1;
         for (RenderInstance instance : scene.getRenderInstances().stream().filter(i -> passesCondition(i)).toList()) {
         
             if (previousMaterialID != instance.getMaterialID()) {
@@ -109,28 +108,22 @@ public class UnlitShaderProgram implements ShaderProgram {
             }
 
             Texture texture = null;
-
             if (instance.isTexturingEnabled()) {
                 texture = scene.getTexture(instance.getTextureID());
             }
 
             if (texture != null) {
-                gl.glUniform1i(unif(gl, "textured"), 1);
-
-                if (previousTextureID != texture.getID()) {
-                    if (locations.getTextureLocation(texture.getID()) == -1) {
-                        locations.loadTexture(gl, texture);
-                    }
-
-                    gl.glBindTexture(GL_TEXTURE_2D, locations.getTextureLocation(texture.getID()));
-                    previousTextureID = texture.getID();
+                if (locations.getTextureLocation(texture.getID()) == -1) {
+                    locations.loadTexture(gl, texture);
                 }
 
-                for (var param : instance.getTextureParameters().entrySet()) {
-                    System.out.println(param.getKey() + " " + param.getValue());
-                    gl.glTexParameteri(GL_TEXTURE_2D, param.getKey(), param.getValue());
-                }
+                boolean textureActive = locations.setupTextureUnit(gl, instance, instanceTextureUnit);
 
+                if (!textureActive) {
+                    gl.glUniform1i(unif(gl, "textured"), 0);
+                } else {
+                    gl.glUniform1i(unif(gl, "textured"), 1);
+                }
             } else {
                 gl.glUniform1i(unif(gl, "textured"), 0);
             }
