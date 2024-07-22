@@ -1,8 +1,5 @@
 package kugge.rendering.core.objects.meshes;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import kugge.rendering.core.objects.materials.Material;
 import kugge.rendering.core.objects.materials.Materials;
 
@@ -30,12 +27,7 @@ public class Mesh {
 
     private String fileName;
 
-    /**
-     * Texture parameters for the textureIDs. Can be empty.
-     */
-    private Map<Integer, Integer> textureParameters;
-
-    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, Map<Integer, Integer> textureParameters, String fileName) {
+    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, String fileName) {
         if (positions.length % 3 != 0) {
             throw new IllegalArgumentException("Positions array must have a length that is a multiple of 3");
         }
@@ -57,7 +49,6 @@ public class Mesh {
         this.normals = normals;
         this.indices = indices;
         this.material = material;
-        this.textureParameters = textureParameters;
 
         this.numVertices = positions.length / 3;
         this.numIndices = indices.length;
@@ -66,7 +57,7 @@ public class Mesh {
     }
 
     public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material) {
-        this(ID, positions, textureCoords, normals, indices, material, new HashMap<>(), null);
+        this(ID, positions, textureCoords, normals, indices, material, null);
     }
 
     public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices) {
@@ -137,14 +128,6 @@ public class Mesh {
         this.material = material;
     }
 
-    public Map<Integer, Integer> getTextureParameters() {
-        return textureParameters;
-    }
-
-    public void setTextureParameters(Map<Integer, Integer> textureParameters) {
-        this.textureParameters = textureParameters;
-    }
-    
     public String getFileName() {
         return fileName;
     }

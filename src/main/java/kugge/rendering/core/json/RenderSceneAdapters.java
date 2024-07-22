@@ -3,9 +3,6 @@ package kugge.rendering.core.json;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -16,7 +13,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import kugge.rendering.core.OpenGLConstants;
 import kugge.rendering.core.objects.SkyBox;
 import kugge.rendering.core.objects.SkyBox.SkyBoxType;
 import kugge.rendering.core.objects.Texture;
@@ -126,15 +122,6 @@ public class RenderSceneAdapters {
                 }
             }
 
-
-            // Deserialize texture parameters from the constant names to their integer values (e.g. GL_TEXTURE_WRAP_S -> 10242)
-            Map<String, String> textureParametersString = context.deserialize(root.get("textureParameters").getAsJsonObject(), HashMap.class);
-            Map<Integer, Integer> textureParameters = textureParametersString.entrySet().stream().collect(Collectors.toMap(
-                e -> OpenGLConstants.getValue(e.getKey()),
-                e -> OpenGLConstants.getValue(e.getValue())
-            ));
-            mesh.setTextureParameters(textureParameters);
-
             return mesh;
         }
 
@@ -143,13 +130,6 @@ public class RenderSceneAdapters {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("ID", src.getID());
             jsonObject.addProperty("fileName", src.getFileName());
-            
-            // Serialize texture parameters from the integer values to their constant names (e.g. 10242 -> GL_TEXTURE_WRAP_S)
-            Map<String, String> textureParametersString = src.getTextureParameters().entrySet().stream().collect(Collectors.toMap(
-                e -> OpenGLConstants.getConstant(e.getKey()),
-                e -> OpenGLConstants.getConstant(e.getValue())
-            ));
-            jsonObject.add("textureParameters", context.serialize(textureParametersString));
             
             return jsonObject;
         }
