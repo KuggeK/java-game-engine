@@ -77,8 +77,10 @@ public class SQLiteAssetManager implements AssetManager {
         String query = fetchQuery("fetchMesh.sql");
         PreparedStatement statement = conn.prepareStatement(query);
         statement.setInt(1, ID);
-        // If db is busy, wait until it's not
         ResultSet res = statement.executeQuery();
+        if (!res.isBeforeFirst()) {
+            throw new SQLException("Mesh not found in database");
+        }
         Mesh mesh = resultSetToMesh(res);
         res.close();
         return mesh;
@@ -88,6 +90,9 @@ public class SQLiteAssetManager implements AssetManager {
     public List<Mesh> fetchAllMeshes() throws Exception {
         String query = fetchQuery("fetchAllMeshes.sql");
         ResultSet res = conn.createStatement().executeQuery(query);
+        if (!res.isBeforeFirst()) {
+            throw new SQLException("No meshes found in database");
+        }
         List<Mesh> meshes = new ArrayList<>();
         while (res.next()) {
             meshes.add(resultSetToMesh(res));
@@ -102,6 +107,9 @@ public class SQLiteAssetManager implements AssetManager {
         PreparedStatement statement = conn.prepareStatement(query);
         statement.setInt(1, ID);
         ResultSet res = statement.executeQuery();
+        if (!res.isBeforeFirst()) {
+            throw new SQLException("Texture not found in database");
+        }
         Texture tex = resultSetToTexture(res);
         res.close();
         return tex;
@@ -111,6 +119,11 @@ public class SQLiteAssetManager implements AssetManager {
     public List<Texture> fetchAllTextures() throws Exception {
         String query = fetchQuery("fetchAllTextures.sql");
         ResultSet res = conn.createStatement().executeQuery(query);
+
+        if (!res.isBeforeFirst()) {
+            throw new SQLException("No textures found in database");
+        }
+
         List<Texture> textures = new ArrayList<>();
         while (res.next()) {
             textures.add(resultSetToTexture(res));
@@ -320,6 +333,9 @@ public class SQLiteAssetManager implements AssetManager {
         PreparedStatement statement = conn.prepareStatement(query);
         statement.setInt(1, ID);
         ResultSet res = statement.executeQuery();
+        if (!res.isBeforeFirst()) {
+            throw new SQLException("Material not found in database");
+        }
         Material material = resultSetToMaterial(res);
         res.close();
         return material;
@@ -329,6 +345,9 @@ public class SQLiteAssetManager implements AssetManager {
     public List<Material> fetchAllMaterials() throws Exception {
         String query = fetchQuery("fetchAllMaterials.sql");
         ResultSet res = conn.createStatement().executeQuery(query);
+        if (!res.isBeforeFirst()) {
+            throw new SQLException("No materials found in database");
+        }
         List<Material> materials = new ArrayList<>();
         while (res.next()) {
             materials.add(resultSetToMaterial(res));
