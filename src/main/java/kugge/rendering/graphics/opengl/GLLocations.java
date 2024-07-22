@@ -28,7 +28,7 @@ public class GLLocations {
      * Contains the index data locations for each mesh. The key is the mesh's ID.
      */
     private Map<Integer, Integer> meshIndices;
-    
+
     /**
      * Contains the texture IDs for each texture. The key is the texture's ID.
      */
@@ -40,6 +40,8 @@ public class GLLocations {
     private int[] activeTextureUnits;
 
     private int shadowMapTexture;
+
+    private int maxNLights = 20;
 
     public GLLocations(GL4 gl, int textureUnitAmount) {
         int[] meshVAOs = new int[1];
@@ -239,5 +241,13 @@ public class GLLocations {
         }
 
         return true;
+    }
+
+    public int getMaxNLights() {
+        return maxNLights;
+    }
+
+    public void setMaxNLights(int maxNLights) {
+        this.maxNLights = maxNLights;
     }
 }

@@ -27,8 +27,6 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
 
     private FloatBuffer matrixValueHelper = Buffers.newDirectFloatBuffer(16);
 
-    private final int MAX_N_LIGHTS = 20;
-
     public BlinnPhongShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile) throws Exception {
         Shader[] shaders = new Shader[] {
             new Shader(GL_VERTEX_SHADER, vertexShaderFile),
@@ -44,16 +42,26 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
 
     @Override
     public void render(GL4 gl, RenderScene scene, GLLocations locations) {
+
+        List<RenderInstance> instancesToRender = scene.getRenderInstances().parallelStream().filter(i -> passesCondition(i)).toList();
+        if (instancesToRender.isEmpty()) {
+            return;
+        }
+
         gl.glUseProgram(programID);
         gl.glBindVertexArray(locations.getMeshVAO());
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         // Set uniforms that are static for all instances
-        int projectionMatrixLocation = unif(gl, "projectionMx");
-        gl.glUniformMatrix4fv(projectionMatrixLocation, 1, false, scene.getProjectionMatrix().get(matrixValueHelper));
+        gl.glUniformMatrix4fv(unif(gl, "projectionMx"), 1, false, scene.getProjectionMatrix().get(matrixValueHelper));
 
-        int viewMatrixLocation = unif(gl, "viewMx");
-        gl.glUniformMatrix4fv(viewMatrixLocation, 1, false, scene.getViewMatrix().get(matrixValueHelper));
+        gl.glUniformMatrix4fv(unif(gl, "viewMx"), 1, false, scene.getViewMatrix().get(matrixValueHelper));
+
+        gl.glUniformMatrix4fv(unif(gl, "lightSpaceMx"), 1, false, scene.getLightSpaceMatrix().get(matrixValueHelper));
+
+        Vector4f viewPos = new Vector4f();
+        new Matrix4f(scene.getViewMatrix()).invert().getColumn(3, viewPos);
+        gl.glUniform3fv(unif(gl, "viewPos"), 1, viewPos.get(matrixValueHelper));
 
         // Set the light uniforms
         DirectionalLight dirLight = scene.getDirectionalLight();
@@ -69,14 +77,10 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
 
         gl.glUniform4fv(unif(gl, "globalAmbient"), 1, scene.getGlobalAmbient().get(matrixValueHelper));
 
-        Vector4f viewPos = new Vector4f();
-        new Matrix4f(scene.getViewMatrix()).invert().getColumn(3, viewPos);
-        gl.glUniform3fv(unif(gl, "viewPos"), 1, viewPos.get(matrixValueHelper));
-
         // Set positional light unifforms
         List<PositionalLight> posLights = scene.getPositionalLights();
         int nLightsLoc = unif(gl, "nLights");
-        gl.glUniform1i(nLightsLoc, Math.min(MAX_N_LIGHTS, posLights.size()));
+        gl.glUniform1i(nLightsLoc, Math.min(locations.getMaxNLights(), posLights.size()));
         for (int i = 0; i < posLights.size(); ++i) {
             PositionalLight light = posLights.get(i);
             gl.glUniform4fv(unif(gl, "posLights[" + i + "].ambient"), 1, light.getAmbient().get(matrixValueHelper));
@@ -101,7 +105,7 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
         // Render all instances
         int previousMaterialID = -1;
         int previousMeshID = -1;
-        for (RenderInstance instance : scene.getRenderInstances().parallelStream().filter(i -> passesCondition(i)).toList()) {
+        for (RenderInstance instance : instancesToRender) {
                     
             if (previousMaterialID != instance.getMaterialID()) {
                 Material mat = scene.getMaterial(instance.getMaterialID());
