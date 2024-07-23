@@ -29,6 +29,10 @@ public abstract class GameComponent {
     public GameObject getGameObject() {
         return gameObject;
     }
+
+    public Transform getTransform() {
+        return transform;
+    }
     
     /**
      * Strip the component of its references to it's game object.

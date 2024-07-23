@@ -42,6 +42,8 @@ public class ScriptingEngine implements Subsystem {
         for (Script script : scripts) {
             script.update(keyInput, dt);
         }
+
+        keyInput.clear();
     }
 
     private void addScript(GameComponent component) {
