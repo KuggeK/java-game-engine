@@ -14,6 +14,7 @@ public class Mesh {
     private float[] positions;
     private float[] textureCoords;
     private float[] normals;
+    private float[] tangents;
 
     // Indices of attributes. The index matches the position, textureID coordinate, and normal of the vertex.
     private int[] indices;
@@ -27,7 +28,7 @@ public class Mesh {
 
     private String fileName;
 
-    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, String fileName) {
+    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, float[] tangents, Material material, String fileName) {
         if (positions.length % 3 != 0) {
             throw new IllegalArgumentException("Positions array must have a length that is a multiple of 3");
         }
@@ -54,6 +55,10 @@ public class Mesh {
         this.numIndices = indices.length;
 
         this.fileName = fileName;
+    }
+
+    public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material, String fileName) {
+        this(ID, positions, textureCoords, normals, indices, null, material, fileName);
     }
 
     public Mesh(int ID, float[] positions, float[] textureCoords, float[] normals, int[] indices, Material material) {
@@ -118,6 +123,14 @@ public class Mesh {
 
     public void setIndices(int[] indices) {
         this.indices = indices;
+    }
+
+    public float[] getTangents() {
+        return tangents;
+    }
+
+    public void setTangents(float[] tangents) {
+        this.tangents = tangents;
     }
 
     public Material getMaterial() {

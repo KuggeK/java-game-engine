@@ -124,6 +124,44 @@ public class Cube extends Mesh {
         0, -1, 0,
     };
 
+    private static final float[] TANGENTS = new float[] {
+        // Back
+        -1, 0, 0,
+        -1, 0, 0,
+        -1, 0, 0,
+        -1, 0, 0,
+
+        // Right
+        0, 0, -1,
+        0, 0, -1,
+        0, 0, -1,
+        0, 0, -1,
+
+        // Front
+        1, 0, 0,
+        1, 0, 0,
+        1, 0, 0,
+        1, 0, 0,
+
+        // Left
+        0, 0, 1,
+        0, 0, 1,
+        0, 0, 1,
+        0, 0, 1,
+
+        // Top
+        1, 0, 0,
+        1, 0, 0,
+        1, 0, 0,
+        1, 0, 0,
+
+        // Bottom
+        1, 0, 0,
+        1, 0, 0,
+        1, 0, 0,
+        1, 0, 0
+    };
+
     private static final int[] INDICES = new int[] {
         // Back
         0, 1, 2, 1, 0, 3,
@@ -144,9 +182,9 @@ public class Cube extends Mesh {
         20, 21, 22, 21, 20, 23
     };
 
-
     public Cube(int id, Material material) {
         super(id, POSITIONS, TEXTURE_COORDINATES, NORMALS, INDICES, material);
+        setTangents(TANGENTS);
     }
 
     public Cube(int id) {

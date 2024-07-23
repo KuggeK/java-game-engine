@@ -158,7 +158,17 @@ public class SQLiteAssetManager implements AssetManager {
         statement.setBytes(1, positionsBuffer.array());
         statement.setBytes(2, textureCoordsBuffer.array());
         statement.setBytes(3, normalsBuffer.array());
-        statement.setBytes(4, indicesBuffer.array());   
+        statement.setBytes(4, indicesBuffer.array()); 
+        
+        if (mesh.getTangents() != null) {
+            ByteBuffer tangentsBuffer = ByteBuffer.allocate(mesh.getTangents().length * Float.BYTES);
+            for (float f : mesh.getTangents()) {
+                tangentsBuffer.putFloat(f);
+            }
+            statement.setBytes(5, tangentsBuffer.array());
+        } else {
+            statement.setBytes(5, null);
+        }
 
         ResultSet res = statement.executeQuery();
         mesh.setID(res.getInt("id"));
@@ -239,7 +249,18 @@ public class SQLiteAssetManager implements AssetManager {
             indices[i / 4] = ByteBuffer.wrap(indicesByte, i, 4).getInt();
         }
 
-        return new Mesh(ID, positions, textureCoords, normals, indices);
+        byte[] tangentsByte = res.getBytes("tangents");
+        float[] tangents = null;
+        if (tangentsByte != null) {
+            tangents = new float[tangentsByte.length / Float.BYTES];
+            for (int i = 0; i < tangentsByte.length; i += 4) {
+                tangents[i / 4] = ByteBuffer.wrap(tangentsByte, i, 4).getFloat();
+            }
+        }
+
+        Mesh mesh = new Mesh(ID, positions, textureCoords, normals, indices);
+        mesh.setTangents(tangents);
+        return mesh;
     }
 
 
@@ -267,12 +288,20 @@ public class SQLiteAssetManager implements AssetManager {
             indicesBuffer.putInt(i);
         }
 
-
         statement.setBytes(1, positionsBuffer.array());
         statement.setBytes(2, textureCoordsBuffer.array());
         statement.setBytes(3, normalsBuffer.array());
         statement.setBytes(4, indicesBuffer.array());
         statement.setInt(5, ID);
+        if (mesh.getTangents() != null) {
+            ByteBuffer tangentsBuffer = ByteBuffer.allocate(mesh.getTangents().length * Float.BYTES);
+            for (float f : mesh.getTangents()) {
+                tangentsBuffer.putFloat(f);
+            }
+            statement.setBytes(6, tangentsBuffer.array());
+        } else {
+            statement.setBytes(6, null);
+        }
 
         statement.executeUpdate();
     }

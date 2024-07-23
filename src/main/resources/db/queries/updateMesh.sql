@@ -4,6 +4,7 @@ SET
     positions = ?, 
     texture_coordinates = ?, 
     normals = ?, 
-    indices = ?  
+    indices = ?,
+    tangents = ?
 WHERE 
     id = ?;
