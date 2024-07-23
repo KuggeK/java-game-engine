@@ -8,7 +8,6 @@ import org.joml.Vector4f;
 
 import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.GL4;
-
 import static com.jogamp.opengl.GL4.*;
 
 import kugge.rendering.core.objects.Texture;
@@ -21,16 +20,16 @@ import kugge.rendering.core.objects.rendering.RenderScene;
 import kugge.rendering.graphics.opengl.GLLocations;
 import kugge.rendering.graphics.opengl.shaders.Shaders.Shader;
 
-public class BlinnPhongShaderProgram implements ShaderProgram {
+public class NormalMapShaderProgram implements ShaderProgram {
 
     private int programID;
 
     private FloatBuffer matrixValueHelper = Buffers.newDirectFloatBuffer(16);
 
-    public BlinnPhongShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile) throws Exception {
+    public NormalMapShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile) throws Exception {
         Shader[] shaders = new Shader[] {
-            new Shader(GL_VERTEX_SHADER, vertexShaderFile),
-            new Shader(GL_FRAGMENT_SHADER, fragmentShaderFile)
+            new Shader(GL4.GL_VERTEX_SHADER, vertexShaderFile),
+            new Shader(GL4.GL_FRAGMENT_SHADER, fragmentShaderFile)
         };
         this.programID = Shaders.loadShaders(shaders, gl);
     }
@@ -42,7 +41,6 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
 
     @Override
     public void render(GL4 gl, RenderScene scene, GLLocations locations) {
-
         List<RenderInstance> instancesToRender = scene.getRenderInstances().parallelStream().filter(i -> passesCondition(i)).toList();
         if (instancesToRender.isEmpty()) {
             return;
@@ -77,7 +75,7 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
 
         gl.glUniform4fv(unif(gl, "globalAmbient"), 1, scene.getGlobalAmbient().get(matrixValueHelper));
 
-        // Set positional light unifforms
+        // Set positional light uniforms
         List<PositionalLight> posLights = scene.getPositionalLights();
         int nLightsLoc = unif(gl, "nLights");
         gl.glUniform1i(nLightsLoc, Math.min(locations.getMaxNLights(), posLights.size()));
@@ -102,11 +100,19 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
         int instanceTextureUnit = 1;
         gl.glUniform1i(unif(gl, "instanceTexture"), instanceTextureUnit);
 
+        int normalMapTextureUnit = 2;
+        gl.glUniform1i(unif(gl, "normalMap"), normalMapTextureUnit);
+
+        int vPositionLoc = gl.glGetAttribLocation(programID, "vPosition");
+        int vTextureCoordLoc = gl.glGetAttribLocation(programID, "vTextureCoord");
+        int vNormalLoc = gl.glGetAttribLocation(programID, "vNormal");
+        int vTangentLoc = gl.glGetAttribLocation(programID, "vTangent");
+
         // Render all instances
         int previousMaterialID = -1;
         int previousMeshID = -1;
         for (RenderInstance instance : instancesToRender) {
-                    
+
             if (previousMaterialID != instance.getMaterialID()) {
                 Material mat = scene.getMaterial(instance.getMaterialID());
                 gl.glUniform4fv(unif(gl, "material.ambient"), 1, mat.getAmbient().get(matrixValueHelper));
@@ -131,17 +137,27 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
                 }
 
                 gl.glBindBuffer(GL_ARRAY_BUFFER, locations.getMeshVertexLoc(mesh.getID()));
-                gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-                gl.glEnableVertexAttribArray(0);
-                gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, mesh.getPositions().length * Float.BYTES);
-                gl.glEnableVertexAttribArray(1);
-                gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, (mesh.getPositions().length + mesh.getTextureCoords().length) * Float.BYTES);
-                gl.glEnableVertexAttribArray(2);
+                gl.glVertexAttribPointer(vPositionLoc, 3, GL_FLOAT, false, 0, 0);
+                gl.glEnableVertexAttribArray(vPositionLoc);
+                gl.glVertexAttribPointer(vTextureCoordLoc, 2, GL_FLOAT, false, 0, mesh.getPositions().length * Float.BYTES);
+                gl.glEnableVertexAttribArray(vTextureCoordLoc);
+                gl.glVertexAttribPointer(vNormalLoc, 3, GL_FLOAT, false, 0, (mesh.getPositions().length + mesh.getTextureCoords().length) * Float.BYTES);
+                gl.glEnableVertexAttribArray(vNormalLoc);
+
+                // Buffer the tangent data
+                if (locations.getMeshTangentLoc(mesh.getID()) == -1) {
+                    locations.loadMeshTangentData(gl, mesh);
+                }
+
+                gl.glBindBuffer(GL_ARRAY_BUFFER, locations.getMeshTangentLoc(mesh.getID()));
+                gl.glVertexAttribPointer(vTangentLoc, 3, GL_FLOAT, false, 0, 0);
+                gl.glEnableVertexAttribArray(vTangentLoc);
 
                 gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, locations.getMeshIndexLoc(mesh.getID()));
                 previousMeshID = mesh.getID();
             }
 
+            // Set the texture if texturing is enabled
             Texture texture = null;
             if (instance.isTexturingEnabled()){
                 texture = scene.getTexture(instance.getTextureID());
@@ -161,6 +177,24 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
                 }
             } else {
                 gl.glUniform1i(unif(gl, "textured"), 0);
+            }
+
+            // Bind the normal map
+            Texture normalMap = scene.getTexture(instance.getNormalMapID());
+            if (normalMap != null) {
+                if (locations.getTextureLocation(normalMap.getID()) == -1) {
+                    locations.loadTexture(gl, normalMap);
+                }
+
+                boolean normalMapActive = locations.setupTextureUnit(gl, instance.getTextureParameters(), instance.getNormalMapID(), normalMapTextureUnit);
+
+                if (!normalMapActive) {
+                    gl.glUniform1i(unif(gl, "normalMapped"), 0);
+                } else {
+                    gl.glUniform1i(unif(gl, "normalMapped"), 1);
+                }
+            } else {
+                gl.glUniform1i(unif(gl, "normalMapped"), 0);
             }
 
             // Set the model matrix
@@ -186,13 +220,15 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
         }
         return loc;
     }
-    
+
     @Override
     public void cleanup(GL4 gl) {
-        gl.glDeleteProgram(programID);
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'cleanup'");
     }
 
-    public boolean passesCondition(RenderInstance instance) {
-        return instance.isLit() && !instance.isNormalMapEnabled();
+    private boolean passesCondition(RenderInstance instance) {
+        return instance.isLit() && instance.isNormalMapEnabled() && instance.getNormalMapID() != -1;
     }
+    
 }

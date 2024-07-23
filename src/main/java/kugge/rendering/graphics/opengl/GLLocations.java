@@ -10,6 +10,7 @@ import static com.jogamp.opengl.GL4.*;
 
 import kugge.rendering.core.objects.Texture;
 import kugge.rendering.core.objects.meshes.Mesh;
+import kugge.rendering.core.objects.meshes.Meshes;
 import kugge.rendering.core.objects.rendering.RenderInstance;
 
 public class GLLocations {
@@ -28,6 +29,11 @@ public class GLLocations {
      * Contains the index data locations for each mesh. The key is the mesh's ID.
      */
     private Map<Integer, Integer> meshIndices;
+
+    /**
+     * Contains the tangent data locations for each mesh. The key is the mesh's ID.
+     */
+    private Map<Integer, Integer> meshTangents;
 
     /**
      * Contains the texture IDs for each texture. The key is the texture's ID.
@@ -50,6 +56,7 @@ public class GLLocations {
 
         meshVBOs = new HashMap<>();
         meshIndices = new HashMap<>();
+        meshTangents = new HashMap<>();
 
         textureLocations = new HashMap<>();
         activeTextureUnits = new int[textureUnitAmount];
@@ -106,6 +113,15 @@ public class GLLocations {
      */
     public void setMeshIndexLoc(int meshID, int meshIndex) {
         meshIndices.put(meshID, meshIndex);
+    }
+
+    /**
+     * Get the VBO location for a meshes tangent data by its ID.
+     * @param meshID The ID of the mesh.
+     * @return The VBO location or -1 if the mesh does not exist.
+     */
+    public Integer getMeshTangentLoc(int meshID) {
+        return meshTangents.getOrDefault(meshID, -1);
     }
 
     /**
@@ -195,6 +211,27 @@ public class GLLocations {
         setMeshIndexLoc(mesh.getID(), VBO[1]);
     }
 
+    public void loadMeshTangentData(GL4 gl, Mesh mesh) {
+        gl.glBindVertexArray(meshVAO);
+
+        int[] VBO = new int[1];
+        gl.glGenBuffers(1, VBO, 0);
+
+        // Bind tangent data buffer
+        gl.glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+
+        // Get mesh tangent data
+        float[] tangents = mesh.getTangents();
+        if (tangents == null) {
+            tangents = Meshes.calculateTangents(mesh);
+        }
+
+        gl.glBufferData(GL_ARRAY_BUFFER, tangents.length * Float.BYTES, Buffers.newDirectFloatBuffer(tangents), GL_STATIC_DRAW);
+
+        // Add mesh data to locations
+        meshTangents.put(mesh.getID(), VBO[0]);
+    }
+
     /**
      * Loads a single texture into the OpenGL context.
      * @param gl The OpenGL context.
@@ -216,14 +253,15 @@ public class GLLocations {
     }
 
     /**
-     * Sets up a texture unit to an instance's texture and texture parameters.
+     * Sets up a texture unit to a texture and texture parameters. Leaves the texture unit active.
      * @param gl The OpenGL context.
-     * @param instance The render instance.
+     * @param textureParameters The texture parameters to set.
+     * @param textureID The ID of the texture.
      * @param textureUnit The texture unit to set up.
      * @return True if the texture unit was set up successfully, false otherwise.
      */
-    public boolean setupTextureUnit(GL4 gl, RenderInstance instance, int textureUnit) {
-        int textureName = getTextureLocation(instance.getTextureID());
+    public boolean setupTextureUnit(GL4 gl, Map<Integer, Integer> textureParameters, int textureID, int textureUnit) {
+        int textureName = getTextureLocation(textureID);
 
         if (textureName == -1 || textureUnit < 0 || textureUnit >= activeTextureUnits.length) {
             return false;
@@ -231,16 +269,24 @@ public class GLLocations {
 
         gl.glActiveTexture(GL_TEXTURE0 + textureUnit);
 
-        if (activeTextureUnits[textureUnit] != textureName) {
-            gl.glBindTexture(GL_TEXTURE_2D, textureName);
-            activeTextureUnits[textureUnit] = textureName;
-        }
+        gl.glBindTexture(GL_TEXTURE_2D, textureName);
 
-        for (var param : instance.getTextureParameters().entrySet()) {
+        for (var param : textureParameters.entrySet()) {
             gl.glTexParameteri(GL_TEXTURE_2D, param.getKey(), param.getValue());
         }
 
         return true;
+    }
+
+    /**
+     * Sets up a texture unit to an instance's texture and texture parameters.
+     * @param gl The OpenGL context.
+     * @param instance The render instance.
+     * @param textureUnit The texture unit to set up.
+     * @return True if the texture unit was set up successfully, false otherwise.
+     */
+    public boolean setupTextureUnit(GL4 gl, RenderInstance instance, int textureUnit) {
+        return setupTextureUnit(gl, instance.getTextureParameters(), instance.getTextureID(), textureUnit);
     }
 
     public int getMaxNLights() {

@@ -12,6 +12,7 @@ import com.jogamp.opengl.GLException;
 
 import kugge.rendering.core.objects.rendering.RenderScene;
 import kugge.rendering.graphics.opengl.shaders.BlinnPhongShaderProgram;
+import kugge.rendering.graphics.opengl.shaders.NormalMapShaderProgram;
 import kugge.rendering.graphics.opengl.shaders.ShaderProgram;
 import kugge.rendering.graphics.opengl.shaders.ShadowMapShaderProgram;
 import kugge.rendering.graphics.opengl.shaders.SkyBoxShaderProgram;
@@ -25,6 +26,7 @@ public class OpenGLBindings implements GLEventListener {
     private ShaderProgram shadowMapProgram;
     private ShaderProgram skyboxProgram;
     private ShaderProgram unlitProgram;
+    private ShaderProgram normalMapProgram;
 
     private GLLocations locations;
 
@@ -54,6 +56,7 @@ public class OpenGLBindings implements GLEventListener {
             shadowMapProgram = new ShadowMapShaderProgram(gl, locations, "shadow.vert", "shadow.frag");
             skyboxProgram = new SkyBoxShaderProgram(gl, "skybox.vert", "skybox.frag", scene.getSkyBox());
             unlitProgram = new UnlitShaderProgram(gl, locations, "unlit.vert", "unlit.frag");
+            normalMapProgram = new NormalMapShaderProgram(gl, "normal.vert", "normal.frag");
         } catch (Exception e) {
             e.printStackTrace();
             throw new GLException("Failed to load shaders");
@@ -80,7 +83,10 @@ public class OpenGLBindings implements GLEventListener {
         // 3. Unlit pass
         unlitProgram.render(gl, scene, locations);
 
-        // 4. Skybox pass
+        // 4. Normal map pass
+        normalMapProgram.render(gl, scene, locations);
+
+        // 5. Skybox pass
         skyboxProgram.render(gl, scene, locations);
     }
 
