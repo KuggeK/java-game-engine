@@ -121,6 +121,7 @@ public class ShadowMapShaderProgram implements ShaderProgram {
         gl.glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         gl.glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
+        gl.glCullFace(GL_FRONT);
 
         // Set light space matrix since it is the same for all instances
         gl.glUniformMatrix4fv(unif(gl, "lightSpaceMx"), 1, false, renderVariables.getLightSpaceMatrix().get(matrixValueHelper));
@@ -135,22 +136,20 @@ public class ShadowMapShaderProgram implements ShaderProgram {
 
             // If this instance has the same mesh as the previous one, we don't need to bind the VBO again
             if (previousMeshID != mesh.getID()) {
-
                 if (locations.getMeshVertexLoc(mesh.getID()) == -1) {
                     locations.loadMesh(gl, mesh);
                 }
 
-                gl.glBindBuffer(GL_ARRAY_BUFFER, locations.getMeshVertexLoc(previousMeshID));
+                gl.glBindBuffer(GL_ARRAY_BUFFER, locations.getMeshVertexLoc(mesh.getID()));
                 gl.glVertexAttribPointer(positionLoc, 3, GL_FLOAT, false, 0, 0);
                 gl.glEnableVertexAttribArray(positionLoc);
 
-                gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, locations.getMeshIndexLoc(previousMeshID));
+                gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, locations.getMeshIndexLoc(mesh.getID()));
                 previousMeshID = mesh.getID();
             } 
 
             // Set the model matrix
-            instance.getModelMatrix().get(matrixValueHelper);
-            gl.glUniformMatrix4fv(modelMxLoc, 1, false, matrixValueHelper);
+            gl.glUniformMatrix4fv(modelMxLoc, 1, false, instance.getModelMatrix().get(matrixValueHelper));
             
             // Draw the mesh
             gl.glDrawElements(GL_TRIANGLES, mesh.getNumIndices(), GL_UNSIGNED_INT, 0);
@@ -158,6 +157,7 @@ public class ShadowMapShaderProgram implements ShaderProgram {
 
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
         gl.glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        gl.glCullFace(GL_BACK);
     }
 
     /**

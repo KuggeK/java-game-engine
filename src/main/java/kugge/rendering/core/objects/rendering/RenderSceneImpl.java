@@ -19,6 +19,7 @@ import kugge.rendering.core.objects.Texture;
 import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.lights.PositionalLight;
 import kugge.rendering.core.objects.materials.Material;
+import kugge.rendering.core.objects.materials.Materials;
 import kugge.rendering.core.objects.meshes.Mesh;
 
 public class RenderSceneImpl implements RenderScene {
@@ -35,6 +36,10 @@ public class RenderSceneImpl implements RenderScene {
     private Matrix4f lightSpaceMatrix;
     private List<PositionalLight> positionalLights;
     private AssetManager assetManager;
+    private float aspectRatio;
+
+    private final Vector3f UP = new Vector3f(0, 1, 0);
+    private final Vector3f ORIGIN = new Vector3f(0, 0, 0);
 
     public RenderSceneImpl() {
         meshes = new HashMap<>();
@@ -56,7 +61,7 @@ public class RenderSceneImpl implements RenderScene {
                 mesh = assetManager.fetchMesh(meshID);
                 meshes.put(meshID, mesh);
             } catch (Exception e) {
-                e.printStackTrace();
+                System.out.println(e.getMessage());
                 mesh = null;
             }
         }
@@ -75,7 +80,7 @@ public class RenderSceneImpl implements RenderScene {
                 texture = assetManager.fetchTexture(textureID);
                 textures.put(textureID, texture);
             } catch (Exception e) {
-                e.printStackTrace();
+                System.out.println(e.getMessage());
                 texture = null;
             }
         }
@@ -118,14 +123,16 @@ public class RenderSceneImpl implements RenderScene {
             return new Matrix4f();
         }
         projectionMatrix = camera.getProjectionMatrix(aspectRatio);
+        this.aspectRatio = aspectRatio;
         return projectionMatrix;
     }
 
     @Override
     public Matrix4f getLightSpaceMatrix() {
-        lightSpaceMatrix.setOrtho(-10, 10, -10, 10, 1, 20);
-        Matrix4f lightViewMatrix = new Matrix4f().lookAt(camera.getTransform().getPosition(), new Vector3f(0, 0, 0), new Vector3f(0, 1, 0));
-        return lightSpaceMatrix.mul(lightViewMatrix);
+        Matrix4f lightView = new Matrix4f().lookAt(new Vector3f(directionalLight.getDirection()).mul(-10), ORIGIN, UP);
+        Matrix4f lightProjection = new Matrix4f().ortho(-20, 20, -20, 20, 1, 30);
+        lightSpaceMatrix = lightProjection.mul(lightView);
+        return lightSpaceMatrix;
     }
 
     @Override
@@ -176,8 +183,7 @@ public class RenderSceneImpl implements RenderScene {
                 material = assetManager.fetchMaterial(materialID);
                 materials.put(materialID, material);
             } catch (Exception e) {
-                e.printStackTrace();
-                material = null;
+                material = Materials.DEFAULT;
             }
         }
         return material;
