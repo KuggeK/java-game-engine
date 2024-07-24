@@ -12,6 +12,7 @@ import com.jogamp.opengl.GL4;
 import kugge.rendering.core.objects.SkyBox;
 import kugge.rendering.core.objects.rendering.RenderScene;
 import kugge.rendering.graphics.opengl.GLLocations;
+import kugge.rendering.graphics.opengl.RenderPassVariables;
 import kugge.rendering.graphics.opengl.shaders.Shaders.Shader;
 
 public class SkyBoxShaderProgram implements ShaderProgram {
@@ -98,7 +99,7 @@ public class SkyBoxShaderProgram implements ShaderProgram {
     }
 
     @Override
-    public void render(GL4 gl, RenderScene scene, GLLocations locations) {
+    public void render(GL4 gl, RenderScene scene, GLLocations locations, RenderPassVariables renderVariables) {
         gl.glDepthMask(false);  
 
         gl.glUseProgram(programID);
@@ -108,9 +109,9 @@ public class SkyBoxShaderProgram implements ShaderProgram {
         int projectionMxLoc = gl.glGetUniformLocation(programID, "projectionMx");
 
         // View matrix without rotation, so the skybox does not rotate with the camera
-        viewMxHelper.identity().set3x3(scene.getViewMatrix());
+        viewMxHelper.identity().set3x3(renderVariables.getViewMatrix());
         gl.glUniformMatrix4fv(viewMxLoc, 1, false, viewMxHelper.get(mxValueBuffer));
-        gl.glUniformMatrix4fv(projectionMxLoc, 1, false, scene.getProjectionMatrix().get(mxValueBuffer));
+        gl.glUniformMatrix4fv(projectionMxLoc, 1, false, renderVariables.getProjectionMatrix().get(mxValueBuffer));
 
         gl.glActiveTexture(GL_TEXTURE0);
         gl.glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapID);

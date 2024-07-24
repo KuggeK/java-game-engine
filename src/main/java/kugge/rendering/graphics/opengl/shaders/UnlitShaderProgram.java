@@ -9,6 +9,7 @@ import static com.jogamp.opengl.GL.GL_FRAMEBUFFER;
 import static com.jogamp.opengl.GL4.*;
 
 import java.nio.FloatBuffer;
+import java.util.List;
 
 import org.joml.Vector4f;
 
@@ -20,6 +21,7 @@ import kugge.rendering.core.objects.meshes.Mesh;
 import kugge.rendering.core.objects.rendering.RenderInstance;
 import kugge.rendering.core.objects.rendering.RenderScene;
 import kugge.rendering.graphics.opengl.GLLocations;
+import kugge.rendering.graphics.opengl.RenderPassVariables;
 import kugge.rendering.graphics.opengl.shaders.Shaders.Shader;
 
 public class UnlitShaderProgram implements ShaderProgram {
@@ -54,17 +56,22 @@ public class UnlitShaderProgram implements ShaderProgram {
     }
 
     @Override
-    public void render(GL4 gl, RenderScene scene, GLLocations locations) {
+    public void render(GL4 gl, RenderScene scene, GLLocations locations, RenderPassVariables renderVariables) {
+        List<RenderInstance> instancesToRender = renderVariables.getInstancesToRender().stream().filter(i -> passesCondition(i)).toList();
+        if (instancesToRender.isEmpty()) {
+            return;
+        }
+
         gl.glUseProgram(programID);
         gl.glBindVertexArray(locations.getMeshVAO());
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         // Set uniforms that are static for all instances
         int projectionMatrixLocation = unif(gl, "projectionMx");
-        gl.glUniformMatrix4fv(projectionMatrixLocation, 1, false, scene.getProjectionMatrix().get(matrixValueHelper));
+        gl.glUniformMatrix4fv(projectionMatrixLocation, 1, false, renderVariables.getProjectionMatrix().get(matrixValueHelper));
 
         int viewMatrixLocation = unif(gl, "viewMx");
-        gl.glUniformMatrix4fv(viewMatrixLocation, 1, false, scene.getViewMatrix().get(matrixValueHelper));
+        gl.glUniformMatrix4fv(viewMatrixLocation, 1, false, renderVariables.getViewMatrix().get(matrixValueHelper));
 
         int instanceTextureUnit = 1;
         gl.glUniform1i(unif(gl, "instanceTexture"), instanceTextureUnit);
@@ -72,7 +79,7 @@ public class UnlitShaderProgram implements ShaderProgram {
         // Render all instances
         int previousMaterialID = -1;
         int previousMeshID = -1;
-        for (RenderInstance instance : scene.getRenderInstances().stream().filter(i -> passesCondition(i)).toList()) {
+        for (RenderInstance instance : instancesToRender) {
         
             if (previousMaterialID != instance.getMaterialID()) {
                 Material mat = scene.getMaterial(instance.getMaterialID());

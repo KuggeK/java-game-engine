@@ -29,6 +29,7 @@ public class OpenGLBindings implements GLEventListener {
     private ShaderProgram normalMapProgram;
 
     private GLLocations locations;
+    private RenderPassVariables renderVariables;
 
     public OpenGLBindings(RenderScene scene) {
         this.scene = scene;
@@ -39,6 +40,7 @@ public class OpenGLBindings implements GLEventListener {
         GL4 gl = drawable.getGL().getGL4();
 
         locations = new GLLocations(gl, 16);
+        renderVariables = new RenderPassVariables();
 
         // Load shaders
         loadShaders(gl);
@@ -69,25 +71,32 @@ public class OpenGLBindings implements GLEventListener {
         gl.glClearColor(0.1f, 0.4f, 0.6f, 1.0f);
         gl.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Set render variables
+        renderVariables.setViewMatrix(scene.getViewMatrix());
+        renderVariables.setProjectionMatrix(scene.getProjectionMatrix());
+        renderVariables.setLightSpaceMatrix(scene.getLightSpaceMatrix());
+        // TODO pass render instances through culling
+        renderVariables.setInstancesToRender(scene.getRenderInstances());
+
         // RENDER PASSES
 
         // 1. Shadow map pass
-        shadowMapProgram.render(gl, scene, locations);
+        shadowMapProgram.render(gl, scene, locations, renderVariables);
 
         // Reset the viewport to the window size after the shadow map pass
         resizeViewPort(drawable);
         
         // 2. Main render pass
-        blinnPhongProgram.render(gl, scene, locations);
+        blinnPhongProgram.render(gl, scene, locations, renderVariables);
 
         // 3. Unlit pass
-        unlitProgram.render(gl, scene, locations);
+        unlitProgram.render(gl, scene, locations, renderVariables);
 
         // 4. Normal map pass
-        normalMapProgram.render(gl, scene, locations);
+        normalMapProgram.render(gl, scene, locations, renderVariables);
 
         // 5. Skybox pass
-        skyboxProgram.render(gl, scene, locations);
+        skyboxProgram.render(gl, scene, locations, renderVariables);
     }
 
     @Override

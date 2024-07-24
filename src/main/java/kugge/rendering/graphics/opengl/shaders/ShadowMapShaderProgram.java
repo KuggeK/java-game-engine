@@ -3,6 +3,7 @@ package kugge.rendering.graphics.opengl.shaders;
 import static com.jogamp.opengl.GL4.*;
 
 import java.nio.FloatBuffer;
+import java.util.List;
 
 import com.jogamp.common.nio.Buffers;
 import com.jogamp.opengl.GL4;
@@ -11,6 +12,7 @@ import kugge.rendering.core.objects.meshes.Mesh;
 import kugge.rendering.core.objects.rendering.RenderInstance;
 import kugge.rendering.core.objects.rendering.RenderScene;
 import kugge.rendering.graphics.opengl.GLLocations;
+import kugge.rendering.graphics.opengl.RenderPassVariables;
 import kugge.rendering.graphics.opengl.shaders.Shaders.Shader;
 
 public class ShadowMapShaderProgram implements ShaderProgram {
@@ -102,31 +104,29 @@ public class ShadowMapShaderProgram implements ShaderProgram {
      * @param scene The scene to render
      * @param locations The OpenGL locations
      */
-    public void render(GL4 gl, RenderScene scene, GLLocations locations) {
-        gl.glUseProgram(programID);
-        gl.glBindVertexArray(locations.getMeshVAO());
-
-        if (scene.getDirectionalLight() == null) {
+    public void render(GL4 gl, RenderScene scene, GLLocations locations, RenderPassVariables renderVariables) {
+        List<RenderInstance> instancesToRender = renderVariables.getInstancesToRender().stream().filter(i -> passesCondition(i)).toList();
+        if (instancesToRender.isEmpty() || scene.getDirectionalLight() == null) {
             clearTexture(gl);
             return;
         }
 
+        gl.glUseProgram(programID);
+        gl.glBindVertexArray(locations.getMeshVAO());
+
         int modelMxLoc = gl.glGetUniformLocation(programID, "modelMx");
         int positionLoc = gl.glGetAttribLocation(programID, "vPosition");
-
-        int previousMeshID = -1;
 
         // Set the viewport to the shadow map size and bind the shadow map
         gl.glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         gl.glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
 
-
-
         // Set light space matrix since it is the same for all instances
-        gl.glUniformMatrix4fv(unif(gl, "lightSpaceMx"), 1, false, scene.getLightSpaceMatrix().get(matrixValueHelper));
-
-        for (RenderInstance instance : scene.getRenderInstances().stream().filter(i -> passesCondition(i)).toList()) {
+        gl.glUniformMatrix4fv(unif(gl, "lightSpaceMx"), 1, false, renderVariables.getLightSpaceMatrix().get(matrixValueHelper));
+        
+        int previousMeshID = -1;
+        for (RenderInstance instance : instancesToRender) {
             Mesh mesh = scene.getMesh(instance.getMeshID());
 
             if (mesh == null) {

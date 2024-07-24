@@ -19,6 +19,7 @@ import kugge.rendering.core.objects.meshes.Mesh;
 import kugge.rendering.core.objects.rendering.RenderInstance;
 import kugge.rendering.core.objects.rendering.RenderScene;
 import kugge.rendering.graphics.opengl.GLLocations;
+import kugge.rendering.graphics.opengl.RenderPassVariables;
 import kugge.rendering.graphics.opengl.shaders.Shaders.Shader;
 
 public class BlinnPhongShaderProgram implements ShaderProgram {
@@ -41,9 +42,9 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
     }
 
     @Override
-    public void render(GL4 gl, RenderScene scene, GLLocations locations) {
+    public void render(GL4 gl, RenderScene scene, GLLocations locations, RenderPassVariables renderVariables) {
 
-        List<RenderInstance> instancesToRender = scene.getRenderInstances().parallelStream().filter(i -> passesCondition(i)).toList();
+        List<RenderInstance> instancesToRender = renderVariables.getInstancesToRender().parallelStream().filter(i -> passesCondition(i)).toList();
         if (instancesToRender.isEmpty()) {
             return;
         }
@@ -53,11 +54,11 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         // Set uniforms that are static for all instances
-        gl.glUniformMatrix4fv(unif(gl, "projectionMx"), 1, false, scene.getProjectionMatrix().get(matrixValueHelper));
+        gl.glUniformMatrix4fv(unif(gl, "projectionMx"), 1, false, renderVariables.getProjectionMatrix().get(matrixValueHelper));
 
-        gl.glUniformMatrix4fv(unif(gl, "viewMx"), 1, false, scene.getViewMatrix().get(matrixValueHelper));
+        gl.glUniformMatrix4fv(unif(gl, "viewMx"), 1, false, renderVariables.getViewMatrix().get(matrixValueHelper));
 
-        gl.glUniformMatrix4fv(unif(gl, "lightSpaceMx"), 1, false, scene.getLightSpaceMatrix().get(matrixValueHelper));
+        gl.glUniformMatrix4fv(unif(gl, "lightSpaceMx"), 1, false, renderVariables.getLightSpaceMatrix().get(matrixValueHelper));
 
         Vector4f viewPos = new Vector4f();
         new Matrix4f(scene.getViewMatrix()).invert().getColumn(3, viewPos);

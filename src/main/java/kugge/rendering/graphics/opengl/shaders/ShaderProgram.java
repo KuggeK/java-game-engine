@@ -4,6 +4,7 @@ import com.jogamp.opengl.GL4;
 
 import kugge.rendering.core.objects.rendering.RenderScene;
 import kugge.rendering.graphics.opengl.GLLocations;
+import kugge.rendering.graphics.opengl.RenderPassVariables;
 
 public interface ShaderProgram {
 
@@ -20,7 +21,7 @@ public interface ShaderProgram {
      * @param gl
      * @param scene
      */
-    void render(GL4 gl, RenderScene scene, GLLocations locations);
+    void render(GL4 gl, RenderScene scene, GLLocations locations, RenderPassVariables renderVariables);
 
     /**
      * Clean up the shader program. This should be called when the shader program is no longer needed.
