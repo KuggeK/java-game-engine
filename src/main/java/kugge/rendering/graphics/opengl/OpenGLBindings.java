@@ -97,6 +97,10 @@ public class OpenGLBindings implements GLEventListener {
 
         // 5. Skybox pass
         skyboxProgram.render(gl, scene, locations, renderVariables);
+
+        // Clean up
+        gl.glUseProgram(0);
+        renderVariables.reset();
     }
 
     @Override
