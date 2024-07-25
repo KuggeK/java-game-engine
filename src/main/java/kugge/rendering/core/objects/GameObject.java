@@ -15,11 +15,15 @@ public class GameObject {
 
     private Set<String> tags;
 
+    private GameObject parent;
+    private Set<GameObject> children;
+
     public GameObject(int ID) {
         this.ID = ID;
         this.components = new HashSet<>();
         this.transform = new Transform();
         this.tags = new HashSet<>();
+        this.children = new HashSet<>();
     }
 
     public Set<GameComponent> getComponents() {
@@ -150,7 +154,8 @@ public class GameObject {
 
     /**
      * Destroy the game object. This will remove all components from the game object and
-     * dispose of each of them. 
+     * dispose of each of them. The game object will be unlinked from its parent and all of its
+     * children will be destroyed. Finally, the game object will be removed from the scene.
      */
     public void destroy() {
         // Notify listeners that the game object is being destroyed.
@@ -170,8 +175,72 @@ public class GameObject {
         
         ID = -1;
         transform = null;
+
+        // Unlink from parent.
+        unlinkFromParent(this);
+
+        // Destroy all children.
+        for (GameObject child : children) {
+            child.destroy();
+        }
     }
 
+    public GameObject getParent() {
+        return parent;
+    }
 
+    public Set<GameObject> getChildren() {
+        return Set.copyOf(children);
+    }
 
+    public void deleteChildren() {
+        for (GameObject child : children) {
+            child.destroy();
+        }
+    }
+
+    /**
+     * Links two game objects into a parent-child relationship. The child game object will be added
+     * to the parent's list of children, and the child's parent reference will be set to the parent.
+     * If the child already has a parent, it will be totally unlinked from that parent first.
+     * @param parent
+     * @param child
+     */
+    public static void link(GameObject parent, GameObject child) {
+        GameObject previousParent = child.parent;
+        if (previousParent == parent) {
+            return;
+        }
+
+        if (previousParent != null) {
+            unlinkFromParent(child);
+        }
+
+        child.parent = parent;
+        parent.children.add(child);
+    }
+
+    /**
+     * Unlink a game object from its parent. This will remove the game object from its parent's
+     * list of children and set the game object's parent to null, making it a root-level game object.
+     * @param child
+     */
+    public static void unlinkFromParent(GameObject child) {
+        if (child.parent != null) {
+            child.parent.children.remove(child);
+            child.parent = null;
+        }
+    }
+
+    /**
+     * Unlink all children from a parent game object. This will remove all children from the parent's
+     * list of children and set the parent reference of each child to null. 
+     * @param parent
+     */
+    public static void unlinkChildren(GameObject parent) {
+        for (GameObject child : parent.getChildren()) {
+            child.parent = null;
+        }
+        parent.children.clear();
+    }
 }
