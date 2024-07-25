@@ -122,6 +122,10 @@ public class GameScene implements GameObjectListener {
         for (GameComponent component : gameObject.getComponents()) {
             onComponentAdded(component.getClass(), component);
         }
+
+        for (GameObject child : gameObject.getChildren()) {
+            addGameObject(child);
+        }
     }
 
     public List<GameObject> getGameObjects() {

@@ -103,6 +103,14 @@ public class GameSceneAdapters {
                 }
             }
 
+            for (var childEntry : root.get("children").getAsJsonArray()) {
+                GameObject child = context.deserialize(childEntry, GameObject.class);
+                GameObject.link(gameObject, child);
+            }
+
+            System.out.println(gameObject.getChildren().size());
+
+
             gameObject.setTransform(transform);
             if (tags != null) {
                 for (String tag : tags) {
