@@ -16,6 +16,7 @@ import kugge.rendering.core.SQLiteAssetManager;
 import kugge.rendering.core.objects.Camera;
 import kugge.rendering.core.objects.SkyBox;
 import kugge.rendering.core.objects.Texture;
+import kugge.rendering.core.objects.Camera.CameraFrustum;
 import kugge.rendering.core.objects.lights.DirectionalLight;
 import kugge.rendering.core.objects.lights.PositionalLight;
 import kugge.rendering.core.objects.materials.Material;
@@ -39,7 +40,6 @@ public class RenderSceneImpl implements RenderScene {
     private float aspectRatio;
 
     private final Vector3f UP = new Vector3f(0, 1, 0);
-    private final Vector3f ORIGIN = new Vector3f(0, 0, 0);
 
     public RenderSceneImpl() {
         meshes = new HashMap<>();
@@ -129,10 +129,73 @@ public class RenderSceneImpl implements RenderScene {
 
     @Override
     public Matrix4f getLightSpaceMatrix() {
-        Matrix4f lightView = new Matrix4f().lookAt(new Vector3f(directionalLight.getDirection()).mul(-10), ORIGIN, UP);
-        Matrix4f lightProjection = new Matrix4f().ortho(-20, 20, -20, 20, 1, 30);
-        lightSpaceMatrix = lightProjection.mul(lightView);
+        // Calculate the camera frustum
+        CameraFrustum camFrustum = camera.calculateFrustumCorners(aspectRatio);
+
+        Vector3f bbCenter = camFrustum.nearCenter().add(camFrustum.farCenter(), new Vector3f()).mul(0.5f);
+        
+        // Form the light view matrix
+        Vector3f lightDir = directionalLight.getDirection().normalize();
+
+        Matrix4f lightViewMatrix = new Matrix4f().lookAt(
+            bbCenter, 
+            bbCenter.add(lightDir, new Vector3f()),
+            UP
+        );
+
+        // Transform the frustum corners to light space
+        camFrustum = camFrustum.toSpace(lightViewMatrix);
+
+        // Calculate the bounding box of the frustum
+        float[] frustumBB = calculateFrustumBoundingBox(camFrustum);
+
+        // Create a light projection matrix
+        lightSpaceMatrix.setOrtho(
+            frustumBB[0], frustumBB[3], 
+            frustumBB[1], frustumBB[4], 
+            frustumBB[2], frustumBB[5]
+        );
+
+        lightSpaceMatrix.mul(lightViewMatrix);
         return lightSpaceMatrix;
+    }
+
+    /**
+     * Calculate the bounding box of the frustum in light space.
+     * @param frustum The camera frustum in light space
+     * @return The bounding box of the frustum as a float array. The array is in the format 
+     * [minX, minY, minZ, maxX, maxY, maxZ]
+     */
+    private float[] calculateFrustumBoundingBox(CameraFrustum frustum) {
+        List<Vector3f> points = List.of(
+            frustum.nearTopLeft(),
+            frustum.nearTopRight(),
+            frustum.nearBottomLeft(),
+            frustum.nearBottomRight(),
+            frustum.farTopLeft(),
+            frustum.farTopRight(),
+            frustum.farBottomLeft(),
+            frustum.farBottomRight()
+        );
+
+        // Calculate the min and max values for each axis
+        float minX = Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        float minZ = Float.MAX_VALUE;
+        float maxX = Float.MIN_VALUE;
+        float maxY = Float.MIN_VALUE;
+        float maxZ = Float.MIN_VALUE;
+
+        for (Vector3f point : points) {
+            minX = Math.min(minX, point.x);
+            minY = Math.min(minY, point.y);
+            minZ = Math.min(minZ, point.z);
+            maxX = Math.max(maxX, point.x);
+            maxY = Math.max(maxY, point.y);
+            maxZ = Math.max(maxZ, point.z);
+        }
+
+        return new float[] {minX, minY, minZ, maxX, maxY, maxZ};
     }
 
     @Override
