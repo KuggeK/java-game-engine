@@ -15,13 +15,14 @@ public class Transform {
     private Matrix4f modelMatrix;
     private boolean modelMatrixChanged;
 
+    private Transform parent;
+
     public Transform() {
         position = new Vector3f();
         rotation = new Quaternionf();
         scale = new Vector3f(1, 1, 1);
         helperVector = new Vector3f();
         modelMatrix = new Matrix4f();
-        modelMatrixChanged = true;
     }
 
     public void setPosition(float x, float y, float z) {
@@ -139,7 +140,12 @@ public class Transform {
             modelMatrix.identity().translate(position).rotate(rotation).scale(scale);
             modelMatrixChanged = false;
         }
-        return modelMatrix;
+
+        if (parent == null) {
+            return modelMatrix;
+        } else {
+            return parent.getModelMatrix().mul(modelMatrix, new Matrix4f());
+        }
     }
 
     public Vector3f getPosition() {
@@ -167,5 +173,9 @@ public class Transform {
         this.rotation.set(transform.rotation);
         this.scale.set(transform.scale);
         modelMatrixChanged = true;
+    }
+
+    public void setParent(Transform parent) {
+        this.parent = parent;
     }
 }

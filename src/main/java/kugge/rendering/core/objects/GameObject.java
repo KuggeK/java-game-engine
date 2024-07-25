@@ -218,6 +218,7 @@ public class GameObject {
 
         child.parent = parent;
         parent.children.add(child);
+        child.transform.setParent(parent.transform);
     }
 
     /**
@@ -229,6 +230,7 @@ public class GameObject {
         if (child.parent != null) {
             child.parent.children.remove(child);
             child.parent = null;
+            child.transform.setParent(null);
         }
     }
 
@@ -240,6 +242,7 @@ public class GameObject {
     public static void unlinkChildren(GameObject parent) {
         for (GameObject child : parent.getChildren()) {
             child.parent = null;
+            child.transform.setParent(null);
         }
         parent.children.clear();
     }

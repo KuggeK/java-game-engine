@@ -76,8 +76,9 @@ public class GameSceneAdapters {
             for (GameComponent component : src.getComponents()) {
                 componentObject.add(component.getClass().getName(), context.serialize(component, GameComponent.class));
             }
-
             jsonObject.add("components", componentObject);
+
+            jsonObject.add("children", context.serialize(src.getChildren()));
 
             return jsonObject;
         }
