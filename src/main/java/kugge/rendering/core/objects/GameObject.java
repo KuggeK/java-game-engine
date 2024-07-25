@@ -15,8 +15,6 @@ public class GameObject {
 
     private Set<String> tags;
 
-    private boolean setToBeDestroyed = false;
-
     public GameObject(int ID) {
         this.ID = ID;
         this.components = new HashSet<>();
@@ -30,10 +28,6 @@ public class GameObject {
 
     public int getID() {
         return ID;
-    }
-
-    public boolean isSetToBeDestroyed() {
-        return setToBeDestroyed;
     }
 
     public void addTag(String tag) {
@@ -178,7 +172,6 @@ public class GameObject {
         transform = null;
     }
 
-    public void setToBeDestroyed() {
-        setToBeDestroyed = true;
-    }
+
+
 }

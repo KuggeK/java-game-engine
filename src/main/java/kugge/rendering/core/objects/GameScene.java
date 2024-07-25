@@ -2,10 +2,8 @@ package kugge.rendering.core.objects;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import kugge.rendering.core.KeyInput;
@@ -97,18 +95,6 @@ public class GameScene implements GameObjectListener {
         for (Subsystem subsystem : subsystems) {
             subsystem.update(dt);
         }
-
-        Set<GameObject> toBeDestroyed = new HashSet<>();
-        for (GameObject gameObject : gameObjects) {
-            if (gameObject.isSetToBeDestroyed()) {
-                toBeDestroyed.add(gameObject);
-            }
-        }
-
-        for (GameObject gameObject : toBeDestroyed) {
-            gameObject.destroy();
-        }
-
     }
 
     public int getID() {
