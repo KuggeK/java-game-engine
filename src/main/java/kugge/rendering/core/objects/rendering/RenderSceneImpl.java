@@ -41,6 +41,9 @@ public class RenderSceneImpl implements RenderScene {
 
     private final Vector3f UP = new Vector3f(0, 1, 0);
 
+    private float[] frustumBB;
+    private int frustumMargin = 10;
+
     public RenderSceneImpl() {
         meshes = new HashMap<>();
         textures = new HashMap<>();
@@ -146,8 +149,34 @@ public class RenderSceneImpl implements RenderScene {
         // Transform the frustum corners to light space
         camFrustum = camFrustum.toSpace(lightViewMatrix);
 
+        // Check if the frustum is still inside the previous bounding box
+        if (frustumBB != null) {
+            boolean inside = true;
+            for (Vector3f point : List.of(
+                camFrustum.nearTopLeft(),
+                camFrustum.nearTopRight(),
+                camFrustum.nearBottomLeft(),
+                camFrustum.nearBottomRight(),
+                camFrustum.farTopLeft(),
+                camFrustum.farTopRight(),
+                camFrustum.farBottomLeft(),
+                camFrustum.farBottomRight()
+            )) {
+                if (point.x < frustumBB[0] || point.x > frustumBB[3] ||
+                    point.y < frustumBB[1] || point.y > frustumBB[4] ||
+                    point.z < frustumBB[2] || point.z > frustumBB[5]) {
+                    inside = false;
+                    break;
+                }
+            }
+
+            if (inside) {
+                return lightSpaceMatrix;
+            }
+        }
+
         // Calculate the bounding box of the frustum
-        float[] frustumBB = calculateFrustumBoundingBox(camFrustum);
+        frustumBB = calculateFrustumBoundingBox(camFrustum, frustumMargin);
 
         // Create a light projection matrix
         lightSpaceMatrix.setOrtho(
@@ -163,10 +192,11 @@ public class RenderSceneImpl implements RenderScene {
     /**
      * Calculate the bounding box of the frustum in light space.
      * @param frustum The camera frustum in light space
+     * @param margin The margin to apply to the bounding box
      * @return The bounding box of the frustum as a float array. The array is in the format 
      * [minX, minY, minZ, maxX, maxY, maxZ]
      */
-    private float[] calculateFrustumBoundingBox(CameraFrustum frustum) {
+    private float[] calculateFrustumBoundingBox(CameraFrustum frustum, float margin) {
         List<Vector3f> points = List.of(
             frustum.nearTopLeft(),
             frustum.nearTopRight(),
@@ -195,7 +225,10 @@ public class RenderSceneImpl implements RenderScene {
             maxZ = Math.max(maxZ, point.z);
         }
 
-        return new float[] {minX, minY, minZ, maxX, maxY, maxZ};
+        return new float[] {
+            minX - margin, minY - margin, minZ - margin,
+            maxX + margin, maxY + margin, maxZ + margin
+        };
     }
 
     @Override
