@@ -108,9 +108,6 @@ public class GameSceneAdapters {
                 GameObject.link(gameObject, child);
             }
 
-            System.out.println(gameObject.getChildren().size());
-
-
             gameObject.setTransform(transform);
             if (tags != null) {
                 for (String tag : tags) {

@@ -29,7 +29,7 @@ public class GameObject {
     }
 
     public Set<GameComponent> getComponents() {
-        return components;
+        return Set.copyOf(components);
     }
 
     public int getID() {
@@ -105,6 +105,7 @@ public class GameObject {
 
     private void addComponent(GameComponent component) {
         component.gameObject = this;
+        component.transform = transform;
         components.add(component);
         if (gameObjectListener != null) {
             gameObjectListener.onComponentAdded(component.getClass(), component);

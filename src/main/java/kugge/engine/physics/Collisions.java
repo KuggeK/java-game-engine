@@ -294,9 +294,10 @@ public class Collisions {
         // The DVector3 function normalize() will throw an exception if the vector is zero
         if (n.length() == 0) {
             System.out.println("Zero length vector");
-            n.eqDiff(spherePos, box.getPosition());
+            n.set(0, 1, 0);
+        } else {
+            n = n.normalize();
         }
-        n = n.normalize();
 
         double contactToSphereDistance = spherePos.reSub(closestPoint).length();
         double penetrationDepth = Math.abs(sphere.getRadius() - contactToSphereDistance);

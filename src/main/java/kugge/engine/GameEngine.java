@@ -1,10 +1,14 @@
 package kugge.engine;
 
+import static java.awt.event.KeyEvent.VK_ESCAPE;
+
 import java.io.IOException;
 
 import kugge.engine.rendering.RenderingEngine;
 import kugge.engine.rendering.Window;
+import kugge.engine.rendering.objects.Camera;
 import kugge.engine.rendering.objects.RenderInstance;
+import kugge.engine.rendering.objects.lights.DirectionalLight;
 import kugge.engine.core.config.EngineProjectConfiguration;
 import kugge.engine.ecs.GameScene;
 import kugge.engine.physics.PhysicsBody;
@@ -52,23 +56,33 @@ public class GameEngine {
         currentScene = GameScene.loadScene(projectConfig.getInitialSceneID());
 
         // Populate subsystems with the scene components
+        System.out.println(currentScene.getGameObjects().size());
         currentScene.getGameObjects().forEach(gameObject -> {
             for (var component : gameObject.getComponents()) {
                 if (component instanceof Script) {
                     scriptingEngine.addScript((Script) component);
-                    break;
+                    continue;
                 }
                 if (component instanceof PhysicsBody) {
                     physicsEngine.addBody((PhysicsBody) component);
-                    break;
+                    continue;
                 }
                 if (component instanceof PhysicsCollider) {
                     physicsEngine.addCollider((PhysicsCollider) component);
-                    break;
+                    continue;
                 }
                 if (component instanceof RenderInstance) {
+                    System.out.println("Adding render instance");
                     renderingEngine.addInstance((RenderInstance) component);
-                    break;
+                    continue;
+                }
+                if (component instanceof Camera) {
+                    renderingEngine.getScene().setCamera((Camera) component);
+                    continue;
+                } 
+                if (component instanceof DirectionalLight) {
+                    renderingEngine.getScene().setDirectionalLight((DirectionalLight) component);
+                    continue;
                 }
             }
         });
@@ -94,6 +108,11 @@ public class GameEngine {
             physicsEngine.updateSimulation(1 / 60.0);
             
             scriptingEngine.updateScripts(deltaTime / 1000.0f);
+
+            if (window.getKeyInput().isKeyPressed(VK_ESCAPE)) {
+                System.exit(0);
+                break;
+            }
 
             window.getKeyInput().clear();
 

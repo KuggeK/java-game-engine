@@ -71,7 +71,7 @@ public class OpenGLWindow extends JFrame implements Window {
         } else if (listener instanceof KeyListener) {
             canvas.addKeyListener((KeyListener) listener);
         } else {
-            throw new IllegalArgumentException("Listener type not supported");
+            throw new IllegalArgumentException("Listener type " + listener.getClass().getName() + " not supported");
         }
         listeners.add(listener);
     }

@@ -9,6 +9,11 @@ import kugge.engine.rendering.opengl.OpenGLWindow;
 public class RenderingEngine implements Renderer {
     private OpenGLWindow window;
     private RenderSceneImpl scene;
+    public RenderSceneImpl getScene() {
+        return scene;
+    }
+
+
     private OpenGLBindings bindings;
     
     private Thread renderThread;
@@ -18,6 +23,7 @@ public class RenderingEngine implements Renderer {
 
     public RenderingEngine() {
         scene = new RenderSceneImpl();
+        bindings = new OpenGLBindings(scene);
 
         SkyBox skyBox = null;
         try {
@@ -27,8 +33,6 @@ public class RenderingEngine implements Renderer {
             // TODO: handle exception
         }
         scene.setSkyBox(skyBox);
-        
-        linkToWindow(window);
     }
 
     public void addInstance(RenderInstance instance) {
@@ -43,12 +47,10 @@ public class RenderingEngine implements Renderer {
         return window;
     }
 
-
     @Override
     public void render() {
         render(false);
     }
-
 
     @Override
     public void render(boolean force) {
@@ -77,5 +79,4 @@ public class RenderingEngine implements Renderer {
         this.window = (OpenGLWindow) window;
         window.registerEventListener(bindings);
     }
-
 }
