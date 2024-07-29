@@ -1,10 +1,10 @@
 # A Simple 3D Java game engine
 A simple game engine implemented in Java. This project is mainly a playground for me to try new stuff (technologies, design patterns etc.) and hopefully learn something from it.
 
-This engine began as a way to learn graphics programming through creating my own simple OpenGL-based 3D rendering engine. I just made my bachelor's thesis on game engines though (read it in Finnish [HERE](https://urn.fi/URN:NBN:fi:tuni-202405145803)), so I already wanted to dabble more into that territory, and so I just decided to expand this project into a game engine.
+This engine began as a way to learn graphics programming through creating my own simple OpenGL-based real-time 3D rendering engine. I just made my bachelor's thesis on game engines though (read it in Finnish [HERE](https://urn.fi/URN:NBN:fi:tuni-202405145803)), so I already wanted to dabble more into that territory, and so I just decided to expand this project into a game engine.
  
 ## Running the engine
-When using the Maven exec plugin to run the program (with `mvn exec:java`), you need to set MAVEN_OPTS to "--add-exports java.base/java.lang=ALL-UNNAMED --add-exports java.desktop/sun.awt=ALL-UNNAMED --add-exports java.desktop/sun.java2d=ALL-UNNAMED". This is a problem with the JOGL library. A discussion about this can be found [HERE](https://jogamp.org/bugzilla/show_bug.cgi?id=1317).
+When using the Maven exec plugin to run the program (with `mvn exec:java` from the command line in the project directory), you need to set the MAVEN_OPTS environment variable to "--add-exports java.base/java.lang=ALL-UNNAMED --add-exports java.desktop/sun.awt=ALL-UNNAMED --add-exports java.desktop/sun.java2d=ALL-UNNAMED". This is a problem with the JOGL library. A discussion about this can be found [HERE](https://jogamp.org/bugzilla/show_bug.cgi?id=1317).
 
 ## Prominent third party libraries
 ### JOGL
