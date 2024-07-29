@@ -11,10 +11,10 @@
     "fullscreen": false,
     "resizable": true,
 
-    "sceneIDs": [
-        1
+    "scenes": [
+        "test-scene"
     ],
-    "initialSceneID": 1,
+    "initialSceneName": "test-scene",
 
     "scenesPath": "scenes/",
     "meshesPath": "assets/meshes/",

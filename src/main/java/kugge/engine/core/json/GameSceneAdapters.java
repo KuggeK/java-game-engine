@@ -134,7 +134,7 @@ public class GameSceneAdapters {
         public GameScene deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
                 throws JsonParseException {
             JsonObject root = json.getAsJsonObject();
-            GameScene scene = new GameScene(root.get("ID").getAsInt());
+            GameScene scene = new GameScene(root.get("ID").getAsInt(), root.get("name").getAsString());
 
             for (JsonElement element : root.get("gameObjects").getAsJsonArray()) {
                 GameObject gameObject = context.deserialize(element, GameObject.class);

@@ -53,7 +53,7 @@ public class GameEngine {
         // Add the subsystems to the scene
         projectConfig = config;
 
-        currentScene = GameScene.loadScene(projectConfig.getInitialSceneID());
+        currentScene = GameScene.loadScene(projectConfig.getInitialSceneName());
 
         // Populate subsystems with the scene components
         System.out.println(currentScene.getGameObjects().size());
@@ -72,7 +72,6 @@ public class GameEngine {
                     continue;
                 }
                 if (component instanceof RenderInstance) {
-                    System.out.println("Adding render instance");
                     renderingEngine.addInstance((RenderInstance) component);
                     continue;
                 }

@@ -17,8 +17,8 @@ public class EngineProjectConfiguration extends WindowSettings {
     private String projectVersion;
     private String projectAuthor;
 
-    private List<Integer> sceneIDs;
-    private int initialSceneID;
+    private List<String> scenes;
+    private String initialSceneName;
 
     private String scenesPath;
     private String meshesPath;
@@ -85,20 +85,20 @@ public class EngineProjectConfiguration extends WindowSettings {
         this.projectAuthor = projectAuthor;
     }
 
-    public List<Integer> getSceneIDs() {
-        return sceneIDs;
+    public List<String> getScenes() {
+        return scenes;
     }
 
-    public void setSceneIDs(List<Integer> sceneIDs) {
-        this.sceneIDs = sceneIDs;
+    public void setSceneIDs(List<String> scenes) {
+        this.scenes = scenes;
     }
 
-    public int getInitialSceneID() {
-        return initialSceneID;
+    public String getInitialSceneName() {
+        return initialSceneName;
     }
 
-    public void setInitialSceneID(int initialSceneID) {
-        this.initialSceneID = initialSceneID;
+    public void setInitialSceneName(String initialSceneName) {
+        this.initialSceneName = initialSceneName;
     }
 
     public String getScenesPath() {
