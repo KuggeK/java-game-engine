@@ -1,17 +1,11 @@
 package kugge.engine;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import kugge.engine.rendering.RenderingEngine;
 import kugge.engine.rendering.Window;
 import kugge.engine.rendering.objects.RenderInstance;
 import kugge.engine.core.config.EngineProjectConfiguration;
-import kugge.engine.core.json.GameSceneAdapters;
 import kugge.engine.ecs.GameScene;
 import kugge.engine.physics.PhysicsBody;
 import kugge.engine.physics.PhysicsCollider;
@@ -37,10 +31,11 @@ public class GameEngine {
         GameEngine engine = new GameEngine();
         String projectPath = args[0];
         EngineProjectConfiguration config = EngineProjectConfiguration.loadProjectConfiguration(projectPath);
-        engine.start(config);
+        engine.initialize(config);
+        engine.start();
     }
 
-    public void init(EngineProjectConfiguration config) throws IOException {
+    public void initialize(EngineProjectConfiguration config) throws IOException {
         window = new OpenGLWindow(config);
         
         renderingEngine = new RenderingEngine();
@@ -79,23 +74,13 @@ public class GameEngine {
         });
     }
 
-    public void start(EngineProjectConfiguration config) throws Exception {
-        // Populate the global paths from the configuration
-        EngineProjectConfiguration.populateGlobalPaths(config);
-
-        // Load the initial scene
-        GsonBuilder builder = new GsonBuilder();
-        GameSceneAdapters.registerAdapters(builder);
-        Gson gson = builder.create();
-        String jsonString = Files.readString(Paths.get("scene" + config.getInitialSceneID() + ".json"));
-        currentScene = gson.fromJson(jsonString, GameScene.class);
-
+    public void start() throws Exception {
         // Timing variables
         long currentTime = 0;
         long previousTime = System.currentTimeMillis();
         long deltaTime = 0;
         long timeTaken = 0;
-        int targetFPS = config.getTargetFPS();
+        int targetFPS = projectConfig.getTargetFPS();
 
 
         // Game loop
@@ -105,8 +90,12 @@ public class GameEngine {
             previousTime = currentTime;
 
             renderingEngine.render();
+            
             physicsEngine.updateSimulation(1 / 60.0);
-            scriptingEngine.update(deltaTime / 1000.0f);
+            
+            scriptingEngine.updateScripts(deltaTime / 1000.0f);
+
+            window.getKeyInput().clear();
 
             // If the time taken by this frame is less than the target time, sleep for the difference
             timeTaken = System.currentTimeMillis() - currentTime;

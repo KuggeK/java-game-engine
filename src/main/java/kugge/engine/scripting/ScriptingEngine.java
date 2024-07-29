@@ -16,7 +16,7 @@ public class ScriptingEngine {
         this.keyInput = keyInput;
     }
 
-    public void update(float dt) {
+    public void updateScripts(float dt) {
         // Start new scripts
         for (Script script : newScripts) {
             script.start();
@@ -27,8 +27,6 @@ public class ScriptingEngine {
         for (Script script : scripts) {
             script.update(keyInput, dt);
         }
-
-        keyInput.clear();
     }
 
     public void addScript(Script script) {
