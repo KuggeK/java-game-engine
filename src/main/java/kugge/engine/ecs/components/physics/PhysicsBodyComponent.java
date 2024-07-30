@@ -281,4 +281,23 @@ public class PhysicsBodyComponent extends GameComponent implements PhysicsBody {
         body.setAngularDamping(damping);
     }
 
+    public Vector3f getLinearVel() {
+        DVector3C vel = body.getLinearVel();
+        return new Vector3f((float) vel.get0(), (float) vel.get1(), (float) vel.get2());
+    }
+
+    public Vector3f getLinearVel(Vector3f dest) {
+        DVector3C vel = body.getLinearVel();
+        return dest.set((float) vel.get0(), (float) vel.get1(), (float) vel.get2());
+    }
+
+    public Vector3f getAngularVel() {
+        DVector3C vel = body.getAngularVel();
+        return new Vector3f((float) vel.get0(), (float) vel.get1(), (float) vel.get2());
+    }
+
+    public Vector3f getAngularVel(Vector3f dest) {
+        DVector3C vel = body.getAngularVel();
+        return dest.set((float) vel.get0(), (float) vel.get1(), (float) vel.get2());
+    }
 }
