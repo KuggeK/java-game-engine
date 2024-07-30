@@ -62,8 +62,12 @@ public class GameScene {
         }
     }
 
+    /**
+     * Returns a read-only set of all game objects in the scene
+     * @return A read-only set of all game objects in the scene
+     */
     public Set<GameObject> getGameObjects() {
-        return gameObjects;
+        return Set.copyOf(gameObjects);
     }
 
     /**

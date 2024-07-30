@@ -9,7 +9,10 @@ import kugge.engine.rendering.Window;
 import kugge.engine.rendering.objects.Camera;
 import kugge.engine.rendering.objects.RenderInstance;
 import kugge.engine.rendering.objects.lights.DirectionalLight;
+import kugge.engine.rendering.objects.lights.PositionalLight;
 import kugge.engine.core.config.EngineProjectConfiguration;
+import kugge.engine.ecs.GameComponent;
+import kugge.engine.ecs.GameObjectManager;
 import kugge.engine.ecs.GameScene;
 import kugge.engine.physics.PhysicsBody;
 import kugge.engine.physics.PhysicsCollider;
@@ -18,7 +21,7 @@ import kugge.engine.rendering.opengl.OpenGLWindow;
 import kugge.engine.scripting.Script;
 import kugge.engine.scripting.ScriptingEngine;
 
-public class GameEngine {
+public class GameEngine implements GameObjectManager {
 
     private Window window;
     private RenderingEngine renderingEngine;
@@ -58,31 +61,9 @@ public class GameEngine {
         // Populate subsystems with the scene components
         System.out.println(currentScene.getGameObjects().size());
         currentScene.getGameObjects().forEach(gameObject -> {
-            for (var component : gameObject.getComponents()) {
-                if (component instanceof Script) {
-                    scriptingEngine.addScript((Script) component);
-                    continue;
-                }
-                if (component instanceof PhysicsBody) {
-                    physicsEngine.addBody((PhysicsBody) component);
-                    continue;
-                }
-                if (component instanceof PhysicsCollider) {
-                    physicsEngine.addCollider((PhysicsCollider) component);
-                    continue;
-                }
-                if (component instanceof RenderInstance) {
-                    renderingEngine.addInstance((RenderInstance) component);
-                    continue;
-                }
-                if (component instanceof Camera) {
-                    renderingEngine.getScene().setCamera((Camera) component);
-                    continue;
-                } 
-                if (component instanceof DirectionalLight) {
-                    renderingEngine.getScene().setDirectionalLight((DirectionalLight) component);
-                    continue;
-                }
+            gameObject.setManager(this);
+            for (GameComponent component : gameObject.getComponents()) {
+                createComponent(component);
             }
         });
     }
@@ -128,6 +109,61 @@ public class GameEngine {
             } else {
                 System.out.println("Frame time did not match target FPS for this frame (" + targetFPS + "). Total time taken was " + timeTaken);
             }
+        }
+    }
+
+    @Override
+    public GameComponent createComponent(GameComponent component) {
+        if (component instanceof Script) {
+            scriptingEngine.setToBeAdded((Script) component);
+        }
+        else if (component instanceof PhysicsBody) {
+            physicsEngine.addBody((PhysicsBody) component);
+        }
+        else if (component instanceof PhysicsCollider) {
+            physicsEngine.addCollider((PhysicsCollider) component);
+        }
+        else if (component instanceof RenderInstance) {
+            renderingEngine.addInstance((RenderInstance) component);
+        }
+        else if (component instanceof Camera) {
+            renderingEngine.getScene().setCamera((Camera) component);
+        }
+        else if (component instanceof DirectionalLight) {
+            renderingEngine.getScene().setDirectionalLight((DirectionalLight) component);
+        }
+        else if (component instanceof PositionalLight) {
+            renderingEngine.getScene().addPositionalLight((PositionalLight) component);
+        }
+        return component;
+    }
+
+    @Override
+    public void disposeComponent(GameComponent component) {
+        if (component instanceof Script) {
+            scriptingEngine.setForRemoval((Script) component);
+        }
+        else if (component instanceof PhysicsBody) {
+            physicsEngine.removeBody((PhysicsBody) component);
+        }
+        else if (component instanceof PhysicsCollider) {
+            physicsEngine.removeCollider((PhysicsCollider) component);
+        }
+        else if (component instanceof RenderInstance) {
+            renderingEngine.removeInstance((RenderInstance) component);
+        }
+        else if (component instanceof Camera) {
+            if (renderingEngine.getScene().getCamera() == component) {
+                renderingEngine.getScene().setCamera(null);
+            }
+        }
+        else if (component instanceof DirectionalLight) {
+            if (renderingEngine.getScene().getDirectionalLight() == component) {
+                renderingEngine.getScene().setDirectionalLight(null);
+            }
+        }
+        else if (component instanceof PositionalLight) {
+            renderingEngine.getScene().removePositionalLight((PositionalLight) component);
         }
     }
 }

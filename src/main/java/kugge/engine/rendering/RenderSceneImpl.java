@@ -57,6 +57,10 @@ public class RenderSceneImpl implements RenderScene {
         assetManager = SQLiteAssetManager.getInstance();
     }
 
+    public Camera getCamera() {
+        return camera;
+    }
+
     @Override
     public Mesh getMesh(int meshID) {
         Mesh mesh = meshes.get(meshID);

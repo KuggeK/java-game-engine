@@ -71,10 +71,12 @@ public class PhysicsEngine {
         for (DBody body : bodiesToDestroy) {
             body.destroy();
         }
+        bodiesToDestroy.clear();
 
         for (DGeom collider : collidersToDestroy) {
             collider.destroy();
         }
+        collidersToDestroy.clear();
 
         linkUnlinkedBodies();
 
@@ -166,5 +168,16 @@ public class PhysicsEngine {
 
     public List<PhysicsCollider> getColliders() {
         return new ArrayList<>(colliders.values());
+    }
+
+    public void removeBody(PhysicsBody body) {
+        bodiesToDestroy.add(body.getBody());
+        bodies.remove(body.getID());
+        bodyColliderLinks.remove(body.getID());
+    }
+
+    public void removeCollider(PhysicsCollider collider) {
+        collidersToDestroy.add(collider.getCollider());
+        colliders.remove(collider.getID());
     }
 }

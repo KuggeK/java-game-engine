@@ -9,11 +9,17 @@ public class ScriptingEngine {
 
     private KeyInput keyInput;
 
+    private Set<Script> toRemove;
+    private Set<Script> toAdd;
+
     public ScriptingEngine(KeyInput keyInput) {
         scripts = new HashSet<>();
         newScripts = new HashSet<>();
 
         this.keyInput = keyInput;
+        
+        toRemove = new HashSet<>();
+        toAdd = new HashSet<>();
     }
 
     public void updateScripts(float dt) {
@@ -27,14 +33,34 @@ public class ScriptingEngine {
         for (Script script : scripts) {
             script.update(keyInput, dt);
         }
+
+        // Remove scripts
+        for (Script script : toRemove) {
+            scripts.remove(script);
+        }
+        toRemove.clear();
+
+        // Add scripts
+        for (Script script : toAdd) {
+            scripts.add(script);
+            newScripts.add(script);
+        }
+        toAdd.clear();
     }
 
-    public void addScript(Script script) {
-        scripts.add(script);
-        newScripts.add(script);
+    /**
+     * Sets a script to be added to the engine after the next update cycle
+     * @param script The script to add
+     */
+    public void setToBeAdded(Script script) {
+        toAdd.add(script);
     }
 
-    public void removeScript(Script script) {
-        scripts.remove(script);
+    /**
+     * Sets a script to be removed from the engine after the next update cycle
+     * @param script The script to remove
+     */
+    public void setForRemoval(Script script) {
+        toRemove.add(script);
     }
 }

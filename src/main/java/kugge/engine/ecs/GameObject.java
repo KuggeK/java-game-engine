@@ -1,6 +1,8 @@
 package kugge.engine.ecs;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -9,27 +11,36 @@ import kugge.engine.core.Transform;
 public class GameObject {
     private int ID;
 
-    private Set<GameComponent> components;
+    private Map<Class<? extends GameComponent>, GameComponent> components;
     
     private Transform transform;
 
-    private GameObjectListener gameObjectListener;
+    private Optional<GameObjectManager> manager;
 
     private Set<String> tags;
 
     private GameObject parent;
     private Set<GameObject> children;
 
-    public GameObject(int ID) {
+    public GameObject(int ID, GameObjectManager manager) {
         this.ID = ID;
-        this.components = new HashSet<>();
+        this.components = new HashMap<>();
         this.transform = new Transform();
         this.tags = new HashSet<>();
         this.children = new HashSet<>();
+        this.manager = Optional.ofNullable(manager);
+    }
+
+    public GameObject(int ID) {
+        this(ID, null);
+    }
+
+    public void setManager(GameObjectManager manager) {
+        this.manager = Optional.ofNullable(manager);
     }
 
     public Set<GameComponent> getComponents() {
-        return Set.copyOf(components);
+        return Set.copyOf(components.values());
     }
 
     public int getID() {
@@ -60,12 +71,7 @@ public class GameObject {
      * and can be safely cast to that type.
      */
     public <T extends GameComponent> Optional<T> getComponentOfType(Class<T> type) {
-        for (GameComponent c : components) {
-            if (c.getClass().equals(type)) {
-                return Optional.of(type.cast(c));
-            }
-        }
-        return Optional.empty();
+        return Optional.ofNullable(type.cast(components.get(type)));
     }
 
     /**
@@ -74,12 +80,7 @@ public class GameObject {
      * @return True if the game object has a component of the specified type, false otherwise.
      */
     public boolean hasComponentOfType(Class<? extends GameComponent> type) {
-        for (GameComponent c : components) {
-            if (c.getClass().equals(type)) {
-                return true;
-            }
-        }
-        return false;
+        return components.containsKey(type);
     }
 
     /**
@@ -89,27 +90,24 @@ public class GameObject {
      * otherwise the previous component will be kept.
      */
     public void addComponent(GameComponent component, boolean force) {
-        for (GameComponent oldComponent : components) {
-            if (oldComponent.getClass().equals(component.getClass())) {
-                if (force) {
-                    removeComponent(oldComponent);
-                    addComponent(component);
-                } else {
-                    System.out.println("Component of type " + component.getClass().getName() + " already exists on this game object.");
-                }
+        if (!force) {
+            if (components.containsKey(component.getClass())) {
                 return;
             }
         }
         addComponent(component);
     }
 
-    private void addComponent(GameComponent component) {
+    /**
+     * Add a component to the game object.
+     * @param <T> The type of game component to add.
+     * @param component
+     */
+    private <T extends GameComponent> void addComponent(T component) {
         component.gameObject = this;
         component.transform = transform;
-        components.add(component);
-        if (gameObjectListener != null) {
-            gameObjectListener.onComponentAdded(component.getClass(), component);
-        }
+        components.put(component.getClass(), component);
+        manager.ifPresent(m -> m.createComponent(component));
     }
 
     /**
@@ -117,11 +115,8 @@ public class GameObject {
      * @param component
      */
     public void removeComponent(GameComponent component) {
-        if (gameObjectListener != null) {
-            gameObjectListener.onComponentRemoved(component.getClass(), component);
-        }
-        component.dispose();
-        components.remove(component);
+        components.remove(component.getClass());
+        manager.ifPresent(m -> m.disposeComponent(component));
     }
 
     /**
@@ -130,12 +125,7 @@ public class GameObject {
      * @return True if a component of the specified type was removed, false otherwise.
      */
     public void removeComponentOfType(Class<? extends GameComponent> type) {
-        for (GameComponent c : components) {
-            if (c.getClass().equals(type)) {
-                removeComponent(c);
-                return;
-            }
-        }
+        components.remove(type);
     }
 
     public Transform getTransform() {
@@ -150,28 +140,14 @@ public class GameObject {
         this.transform.set(transform);
     }
 
-    public void registerListener(GameObjectListener listener) {
-        this.gameObjectListener = listener;
-    }
-
     /**
      * Destroy the game object. This will remove all components from the game object and
      * dispose of each of them. The game object will be unlinked from its parent and all of its
-     * children will be destroyed. Finally, the game object will be removed from the scene.
+     * children will be destroyed. Finally, the game object will be removed from the manager.
      */
     public void destroy() {
-        // Notify listeners that the game object is being destroyed.
-        if (gameObjectListener != null) {
-            gameObjectListener.onGameObjectDestroy(this);
-        }
-
         // Dispose of all components.
-        for (GameComponent c : components) {
-            if (gameObjectListener != null) {
-                gameObjectListener.onComponentRemoved(c.getClass(), c);
-            }
-            c.dispose();
-        }
+        manager.ifPresent(m -> components.values().forEach(m::disposeComponent));
 
         components.clear();
         
