@@ -17,6 +17,8 @@ import kugge.engine.core.Transform;
 import kugge.engine.ecs.GameComponent;
 import kugge.engine.ecs.GameObject;
 import kugge.engine.ecs.GameScene;
+import kugge.engine.scripting.Script;
+import kugge.engine.scripting.ScriptLoader;
 
 public class GameSceneAdapters {    
 
@@ -99,7 +101,15 @@ public class GameSceneAdapters {
                     GameComponent component = context.deserialize(entry.getValue(), componentClass);
                     gameObject.addComponent(component, true);
                 } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
+                    System.out.println(e.getMessage());
+
+                   // If the class is not found, it might be a script, which needs to be loaded from the script loader.
+                    try {
+                        Script script = ScriptLoader.loadScript(entry.getKey());
+                        gameObject.addComponent(script, true);
+                    } catch (Exception e2) {
+                        System.out.println("Could not load script: " + entry.getKey());
+                    }
                 }
             }
 

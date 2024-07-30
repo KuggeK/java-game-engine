@@ -1,6 +1,6 @@
 package kugge.engine;
 
-import static java.awt.event.KeyEvent.VK_ESCAPE;
+import static java.awt.event.KeyEvent.*;
 
 import java.io.IOException;
 
@@ -20,10 +20,10 @@ import kugge.engine.physics.PhysicsCollider;
 import kugge.engine.physics.PhysicsEngine;
 import kugge.engine.rendering.opengl.OpenGLWindow;
 import kugge.engine.scripting.Script;
+import kugge.engine.scripting.ScriptLoader;
 import kugge.engine.scripting.ScriptingEngine;
 
 public class GameEngine implements GameObjectManager {
-
     private Window window;
     private RenderingEngine renderingEngine;
     private PhysicsEngine physicsEngine;
@@ -36,6 +36,9 @@ public class GameEngine implements GameObjectManager {
             throw new IllegalArgumentException("No project path provided.");
         }
 
+        ScriptLoader.compileAndPackageScripts("scripts.jar", "assets/scripts");
+        ScriptLoader.addJarToClasspath("scripts.jar");
+
         GameEngine engine = new GameEngine();
         String projectPath = args[0];
         EngineProjectConfiguration config = EngineProjectConfiguration.loadProjectConfiguration(projectPath);
@@ -43,6 +46,11 @@ public class GameEngine implements GameObjectManager {
         engine.start();
     }
 
+    /**
+     * Initialize the game engine with the given configuration. This will set up the window, rendering engine, physics engine, and scripting engine.
+     * @param config The configuration for the engine.
+     * @throws IOException If the initial scene cannot be loaded.
+     */
     public void initialize(EngineProjectConfiguration config) throws IOException {
         window = new OpenGLWindow(config);
         
@@ -69,6 +77,10 @@ public class GameEngine implements GameObjectManager {
         });
     }
 
+    /**
+     * Start the game engine. This will start the game loop and run the game until the window is closed.
+     * @throws Exception
+     */
     public void start() throws Exception {
         // Timing variables
         long currentTime = 0;
@@ -96,6 +108,8 @@ public class GameEngine implements GameObjectManager {
             }
 
             window.getKeyInput().clear();
+
+
 
             // If the time taken by this frame is less than the target time, sleep for the difference
             timeTaken = System.currentTimeMillis() - currentTime;

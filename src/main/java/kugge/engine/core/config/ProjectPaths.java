@@ -9,7 +9,7 @@ public class ProjectPaths {
     private static String meshesPath = "meshes/";
     private static String texturesPath = "textures/";
     private static String shadersPath = "shaders/";
-    private static String scriptsPath = "scripts/";
+    private static String scriptsPath = "assets/scripts/";
     private static String classesPath = "classes/";
 
     public static String getScenesPath() {

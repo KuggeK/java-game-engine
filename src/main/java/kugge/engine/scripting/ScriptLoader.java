@@ -1,17 +1,21 @@
 package kugge.engine.scripting;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
-import kugge.engine.core.config.ProjectPaths;
-
 public class ScriptLoader {
+
+    private static JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
+    private static JarClassLoader jarClassLoader = new JarClassLoader((URLClassLoader)ScriptLoader.class.getClassLoader());
     
     public static Script loadScript(String scriptName) {
         try {
-            Class<?> scriptClass = Class.forName(scriptName);
+            Class<?> scriptClass = jarClassLoader.loadClass(scriptName);
             return (Script) scriptClass.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             e.printStackTrace();
@@ -20,34 +24,23 @@ public class ScriptLoader {
     }
 
     /**
-     * Compile user scripts into the game from the scripts directory.
+     * Compile user script with the given name.
      */
     public static boolean compileScript(String scriptName) {
-        JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
-
         int result = javac.run(System.in, System.out, System.err,
-            "-d", "target/classes/", 
             "-classpath", "target/rendering-engine-1.0.jar", 
-            ProjectPaths.getScriptsPath() + scriptName + ".java");
+            scriptName);
 
         if (result != 0) {
             System.out.println("Compilation failed.");
             return false;
         }
+
         return true;
     }
 
     /**
-     * Compile all scripts in the scripts directory.
-     */
-    public static void compileAllScripts() {
-        // Run through all Java files in the scripts directory and compile them
-        File scriptsDir = new File(ProjectPaths.getScriptsPath());
-        compileAllScripts(scriptsDir);
-    }
-
-    /**
-     * Recursively compile all scripts in the given directory.
+     * Recursively compile all scripts in the given directory to a jar file.
      * @param directory The directory to search for scripts in.
      */
     public static void compileAllScripts(File directory) {
@@ -60,8 +53,7 @@ public class ScriptLoader {
         for (File entry : entries) {
             if (entry.getName().endsWith(".java")) {
                 System.out.println("Java file: " + entry.getName());
-                String scriptName = entry.getName().replace(".java", "");
-                compileScript(scriptName);
+                compileScript(entry.getAbsolutePath());
             }
 
             if (entry.isDirectory()) {
@@ -69,5 +61,29 @@ public class ScriptLoader {
                 compileAllScripts(entry);
             } 
         }
+    }
+
+    public static void compileAllScripts(String directory) {
+        compileAllScripts(new File(directory));
+    }
+
+    public static void compileAndPackageScripts(String jarName, String dirPath) {
+        try {
+            compileAllScripts(dirPath);
+            JarPackager.packageDirectoryClasses(jarName, dirPath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void addJarToClasspath(String jarName) {
+        try {
+            URL scriptsJarURL = new File(jarName).toURI().toURL();
+            jarClassLoader.addURL(scriptsJarURL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
     }
 }
