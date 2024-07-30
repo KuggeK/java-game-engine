@@ -12,6 +12,7 @@ import kugge.engine.rendering.objects.lights.DirectionalLight;
 import kugge.engine.rendering.objects.lights.PositionalLight;
 import kugge.engine.core.config.EngineProjectConfiguration;
 import kugge.engine.ecs.GameComponent;
+import kugge.engine.ecs.GameObject;
 import kugge.engine.ecs.GameObjectManager;
 import kugge.engine.ecs.GameScene;
 import kugge.engine.physics.PhysicsBody;
@@ -165,5 +166,20 @@ public class GameEngine implements GameObjectManager {
         else if (component instanceof PositionalLight) {
             renderingEngine.getScene().removePositionalLight((PositionalLight) component);
         }
+    }
+
+    @Override
+    public void addGameObject(GameObject gameObject) {
+        gameObject.setManager(this);
+        currentScene.addGameObject(gameObject);
+
+        for (GameComponent component : gameObject.getComponents()) {
+            createComponent(component);
+        }
+    }
+
+    @Override
+    public void removeGameObject(GameObject gameObject) {
+        currentScene.removeGameObject(gameObject);
     }
 }

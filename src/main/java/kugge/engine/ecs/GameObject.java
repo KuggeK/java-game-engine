@@ -147,7 +147,10 @@ public class GameObject {
      */
     public void destroy() {
         // Dispose of all components.
-        manager.ifPresent(m -> components.values().forEach(m::disposeComponent));
+        manager.ifPresent(m -> {
+            m.removeGameObject(this);
+            components.values().forEach(m::disposeComponent);
+        });
 
         components.clear();
         
