@@ -27,8 +27,9 @@ public class ScriptLoader {
      * Compile user script with the given name.
      */
     public static boolean compileScript(String scriptName) {
+        String separator = System.getProperty("path.separator");
         int result = javac.run(System.in, System.out, System.err,
-            "-classpath", "target/rendering-engine-1.0.jar", 
+            "-classpath", "assets/scripts/rendering-engine-1.0.jar" + separator + "assets/scripts/joml-1.10.5.jar", 
             scriptName);
 
         if (result != 0) {
