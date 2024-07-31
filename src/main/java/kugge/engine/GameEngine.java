@@ -11,6 +11,7 @@ import kugge.engine.rendering.objects.RenderInstance;
 import kugge.engine.rendering.objects.lights.DirectionalLight;
 import kugge.engine.rendering.objects.lights.PositionalLight;
 import kugge.engine.core.config.EngineProjectConfiguration;
+import kugge.engine.core.config.ProjectPaths;
 import kugge.engine.ecs.GameComponent;
 import kugge.engine.ecs.GameObject;
 import kugge.engine.ecs.GameObjectManager;
@@ -36,7 +37,7 @@ public class GameEngine implements GameObjectManager {
             throw new IllegalArgumentException("No project path provided.");
         }
 
-        ScriptLoader.compileAndPackageScripts("scripts.jar", "assets/scripts");
+        ScriptLoader.compileAndPackageScripts("scripts.jar", ProjectPaths.getScriptsPath());
         ScriptLoader.addJarToClasspath("scripts.jar");
 
         GameEngine engine = new GameEngine();

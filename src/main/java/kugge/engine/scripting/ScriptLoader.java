@@ -26,10 +26,13 @@ public class ScriptLoader {
     /**
      * Compile user script with the given name.
      */
-    public static boolean compileScript(String scriptName) {
-        String separator = System.getProperty("path.separator");
+    public static boolean compileScript(String scriptName, String directoryPath) {
+        String pathSep = System.getProperty("path.separator");
+        String fileSep = System.getProperty("file.separator");
+        directoryPath = directoryPath.replace("/", fileSep) + fileSep;
+        
         int result = javac.run(System.in, System.out, System.err,
-            "-classpath", "assets/scripts/rendering-engine-1.0.jar" + separator + "assets/scripts/joml-1.10.5.jar", 
+            "-classpath", directoryPath + "rendering-engine-1.0.jar" + pathSep + directoryPath + "joml-1.10.5.jar", 
             scriptName);
 
         if (result != 0) {
@@ -54,7 +57,7 @@ public class ScriptLoader {
         for (File entry : entries) {
             if (entry.getName().endsWith(".java")) {
                 System.out.println("Java file: " + entry.getName());
-                compileScript(entry.getAbsolutePath());
+                compileScript(entry.getAbsolutePath(), directory.getAbsolutePath());
             }
 
             if (entry.isDirectory()) {
