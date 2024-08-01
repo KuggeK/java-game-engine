@@ -2,12 +2,12 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>kugge.rendering</groupId>
-  <artifactId>rendering-engine</artifactId>
+  <groupId>kugge</groupId>
+  <artifactId>engine</artifactId>
   <packaging>jar</packaging>
   <version>1.0</version>
-  <name>rendering-engine</name>
-  <url>https://github.com/KuggeK/rendering-engine</url>
+  <name>java-game-engine</name>
+  <url>https://github.com/KuggeK/java-game-engine</url>
   <properties>
     <maven.compiler.source>19</maven.compiler.source>
     <maven.compiler.target>19</maven.compiler.target>
@@ -76,23 +76,6 @@
             <argument>defaultProject.json</argument>
           </arguments>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.jolira</groupId>
-        <artifactId>onejar-maven-plugin</artifactId>
-        <version>1.4.4</version>
-        <executions>
-          <execution>
-            <configuration>
-              <mainClass>kugge.engine.GameEngine</mainClass>
-              <onejarVersion>0.97</onejarVersion>
-              <attachToBuild>true</attachToBuild>
-            </configuration>
-            <goals>
-              <goal>one-jar</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
