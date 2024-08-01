@@ -1,6 +1,6 @@
 package io.github.kuggek.engine;
 
-import static java.awt.event.KeyEvent.*;
+import static java.awt.event.KeyEvent.VK_ESCAPE;
 
 import java.io.IOException;
 
@@ -32,6 +32,16 @@ public class GameEngine implements GameObjectManager {
     private GameScene currentScene;
     private EngineProjectConfiguration projectConfig;
 
+    // Game loop timing variables
+    private long currentTime;
+    private long previousTime;
+    private long deltaTime;
+    private long timeTaken;
+    private int targetFPS;
+    private boolean running = false;
+
+    private Thread gameLoopThread;
+
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
             throw new IllegalArgumentException("No project path provided.");
@@ -44,7 +54,7 @@ public class GameEngine implements GameObjectManager {
         String projectPath = args[0];
         EngineProjectConfiguration config = EngineProjectConfiguration.loadProjectConfiguration(projectPath);
         engine.initialize(config);
-        engine.start();
+        engine.startGameLoop();
     }
 
     /**
@@ -63,8 +73,9 @@ public class GameEngine implements GameObjectManager {
         // Link the window's key input to the scripting engine to allow user input to be used in scripts
         scriptingEngine = new ScriptingEngine(renderingEngine.getWindow().getKeyInput());
 
-        // Add the subsystems to the scene
         projectConfig = config;
+
+        targetFPS = projectConfig.getTargetFPS();
 
         currentScene = GameScene.loadScene(projectConfig.getInitialSceneName());
 
@@ -79,53 +90,100 @@ public class GameEngine implements GameObjectManager {
     }
 
     /**
-     * Start the game engine. This will start the game loop and run the game until the window is closed.
+     * Starts the game engine. This will start the game loop and run the game until the window is closed.
+     * {@link #initialize(EngineProjectConfiguration)} must be called before this method.
      * @throws Exception
      */
-    public void start() throws Exception {
-        // Timing variables
-        long currentTime = 0;
-        long previousTime = System.currentTimeMillis();
-        long deltaTime = 0;
-        long timeTaken = 0;
-        int targetFPS = projectConfig.getTargetFPS();
-
-
-        // Game loop
-        while (true) {
-            currentTime = System.currentTimeMillis();
-            deltaTime = currentTime - previousTime;
-            previousTime = currentTime;
-
-            renderingEngine.render();
-            
-            physicsEngine.updateSimulation(1 / 60.0);
-            
-            scriptingEngine.updateScripts(deltaTime / 1000.0f);
-
-            if (window.getKeyInput().isKeyPressed(VK_ESCAPE)) {
-                System.exit(0);
-                break;
-            }
-
-            window.getKeyInput().clear();
-
-
-
-            // If the time taken by this frame is less than the target time, sleep for the difference
-            timeTaken = System.currentTimeMillis() - currentTime;
-            if (timeTaken < 1000 / targetFPS) {
-                try {
-                    if (targetFPS - timeTaken != 0) {
-                        Thread.sleep(1000 / targetFPS - timeTaken);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                System.out.println("Frame time did not match target FPS for this frame (" + targetFPS + "). Total time taken was " + timeTaken);
-            }
+    public void startGameLoop() throws Exception {
+        if (gameLoopThread != null && gameLoopThread.isAlive()) {
+            gameLoopThread.join();
         }
+
+        gameLoopThread = new Thread(() -> {
+            previousTime = System.currentTimeMillis();
+
+            running = true;
+            // Game loop
+            while (running) {
+                currentTime = System.currentTimeMillis();
+                deltaTime = currentTime - previousTime;
+                previousTime = currentTime;
+    
+                if (window.getKeyInput().isKeyPressed(VK_ESCAPE)) {
+                    destroy();
+                }
+
+                timeTaken = update(deltaTime / 1000.0f);
+    
+                if (timeTaken < 1000 / targetFPS) {
+                    try {
+                        if (targetFPS - timeTaken != 0) {
+                            System.out.println("Sleeping ig");
+                            Thread.sleep(1000 / targetFPS - timeTaken);
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    System.out.println("Frame time did not match target FPS for this frame (" + targetFPS + "). Total time taken was " + timeTaken);
+                }
+            }
+        });
+
+        gameLoopThread.start();
+    }
+
+    /**
+     * Update the game engine's subsystems using the given delta time by a single tick. 
+     * This will update the rendering engine, physics engine, and scripting engine.
+     * @param dt The delta time since the last update.
+     * @return The time taken to update this frame.
+     */
+    public long update(float dt) {
+        long startTime = System.currentTimeMillis();
+
+        renderingEngine.render();
+        physicsEngine.updateSimulation(1 / 60.0);
+        scriptingEngine.updateScripts(dt);
+        window.getKeyInput().clear();
+
+        return System.currentTimeMillis() - startTime;
+    }
+
+    public RenderingEngine getRenderingEngine() {
+        return renderingEngine;
+    }
+
+    public PhysicsEngine getPhysicsEngine() {
+        return physicsEngine;
+    }
+
+    public ScriptingEngine getScriptingEngine() {
+        return scriptingEngine;
+    }
+
+    public Window getWindow() {
+        return window;
+    }
+
+    public boolean isRunning() {
+        return running;
+    }
+
+    /**
+     * Stops the game engine loop after the current frame is done. To 
+     * actually close the game, call {@link GameEngine#destroy()}.
+     */
+    public void stopGameLoop() {
+        running = false;
+    }
+
+    /**
+     * Destroys the game engine and the window. This will stop the game loop and close the window.
+     */
+    public void destroy() {
+        stopGameLoop();
+        window.destroy();
     }
 
     @Override
