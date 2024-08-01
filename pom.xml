@@ -71,7 +71,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.2.0</version>
         <configuration>
-          <mainClass>kugge.engine.GameEngine</mainClass>
+          <mainClass>io.github.kuggek.engine.GameEngine</mainClass>
           <arguments>
             <argument>defaultProject.json</argument>
           </arguments>
