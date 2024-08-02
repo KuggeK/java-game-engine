@@ -8,6 +8,7 @@ import io.github.kuggek.engine.ecs.GameComponent;
 import io.github.kuggek.engine.ecs.GameObject;
 import io.github.kuggek.engine.ecs.components.ComponentField;
 import io.github.kuggek.engine.rendering.objects.Camera;
+import io.github.kuggek.engine.subsystems.SubsystemSettings;
 
 public class CameraComponent extends GameComponent implements Camera {
     @ComponentField
@@ -21,6 +22,9 @@ public class CameraComponent extends GameComponent implements Camera {
 
     @ComponentField
     private boolean orthographic;
+
+    @ComponentField
+    private boolean activeOnStart = false;
 
     public CameraComponent() {
         super();
@@ -51,6 +55,13 @@ public class CameraComponent extends GameComponent implements Camera {
             return new Matrix4f().ortho(-1, 1, -1, 1, near, far);
         } else {
             return new Matrix4f().perspective((float) Math.toRadians(fov), aspectRatio, near, far);
+        }
+    }
+
+    @Override
+    protected void onAwake(SubsystemSettings settings) {
+        if (activeOnStart) {
+            settings.setActiveCamera(this);
         }
     }
 
@@ -92,5 +103,9 @@ public class CameraComponent extends GameComponent implements Camera {
 
     public void setTransform(Transform transform) {
         this.transform = transform;
+    }
+
+    public boolean isActiveOnStart() {
+        return activeOnStart;
     }
 }

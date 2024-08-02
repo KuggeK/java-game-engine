@@ -8,6 +8,7 @@ import java.util.Set;
 
 import io.github.kuggek.engine.core.Transform;
 import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.subsystems.SubsystemSettings;
 
 /**
  * Represents an abstract component of a game object. Components are used to add functionality
@@ -46,24 +47,23 @@ public abstract class GameComponent {
     }
 
     /**
-     * Disposes of this component. This should be used to free up resources. Some components
-     * may not need to do anything here, but especially components that allocate resources
-     * elsewhere in the system should free those resources here. 
-     * 
-     * Essentially this function should make the component ready for garbage collection. Also removes
-     * any references to the game object.
-     */
-    public void dispose() {
-        onDispose();
-        strip();
-    }
-
-    /**
      * Subclasses can override this method to perform any operations that need to be done
      * when the component is disposed of.
      */
-    protected void onDispose() {
+    protected void onDispose(SubsystemSettings settings) {
 
+    }
+
+    protected void onAwake(SubsystemSettings settings) {
+
+    }
+
+    public static void awake(GameComponent component, SubsystemSettings settings) {
+        component.onAwake(settings);
+    }
+
+    public static void dispose(GameComponent component, SubsystemSettings settings) {
+        component.onDispose(settings);
     }
 
     /**

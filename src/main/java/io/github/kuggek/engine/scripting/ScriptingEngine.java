@@ -2,6 +2,8 @@ package io.github.kuggek.engine.scripting;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import io.github.kuggek.engine.subsystems.SubsystemSettings;
 public class ScriptingEngine {
 
     private Set<Script> scripts;
@@ -22,7 +24,7 @@ public class ScriptingEngine {
         toAdd = new HashSet<>();
     }
 
-    public void updateScripts(float dt) {
+    public void updateScripts(float dt, SubsystemSettings settings) {
         // Start new scripts
         for (Script script : newScripts) {
             script.start();
@@ -31,7 +33,7 @@ public class ScriptingEngine {
 
         // Update all scripts
         for (Script script : scripts) {
-            script.update(keyInput, dt);
+            script.update(keyInput, dt, settings);
         }
 
         // Remove scripts

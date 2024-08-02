@@ -10,25 +10,14 @@ import io.github.kuggek.engine.ecs.GameComponent;
 import io.github.kuggek.engine.ecs.GameObject;
 import io.github.kuggek.engine.ecs.GameObjectManager;
 import io.github.kuggek.engine.ecs.GameScene;
-import io.github.kuggek.engine.physics.PhysicsBody;
-import io.github.kuggek.engine.physics.PhysicsCollider;
-import io.github.kuggek.engine.physics.PhysicsEngine;
-import io.github.kuggek.engine.rendering.RenderingEngine;
 import io.github.kuggek.engine.rendering.Window;
-import io.github.kuggek.engine.rendering.objects.Camera;
-import io.github.kuggek.engine.rendering.objects.RenderInstance;
-import io.github.kuggek.engine.rendering.objects.lights.DirectionalLight;
-import io.github.kuggek.engine.rendering.objects.lights.PositionalLight;
 import io.github.kuggek.engine.rendering.opengl.OpenGLWindow;
-import io.github.kuggek.engine.scripting.Script;
 import io.github.kuggek.engine.scripting.ScriptLoader;
-import io.github.kuggek.engine.scripting.ScriptingEngine;
+import io.github.kuggek.engine.subsystems.EngineSubsystems;
 
 public class GameEngine implements GameObjectManager {
+    private EngineSubsystems subsystems;
     private Window window;
-    private RenderingEngine renderingEngine;
-    private PhysicsEngine physicsEngine;
-    private ScriptingEngine scriptingEngine;
     private GameScene currentScene;
     private EngineProjectConfiguration projectConfig;
 
@@ -64,14 +53,9 @@ public class GameEngine implements GameObjectManager {
      */
     public void initialize(EngineProjectConfiguration config) throws IOException {
         window = new OpenGLWindow(config);
-        
-        renderingEngine = new RenderingEngine();
-        renderingEngine.linkToWindow(window);
+        subsystems = new EngineSubsystems(window.getKeyInput());
 
-        physicsEngine = new PhysicsEngine();
-
-        // Link the window's key input to the scripting engine to allow user input to be used in scripts
-        scriptingEngine = new ScriptingEngine(renderingEngine.getWindow().getKeyInput());
+        subsystems.getRenderingEngine().linkToWindow(window);
 
         projectConfig = config;
 
@@ -113,19 +97,17 @@ public class GameEngine implements GameObjectManager {
                     destroy();
                 }
 
-                timeTaken = update(deltaTime / 1000.0f);
+                // Update the engine subsystems. Time taken is in nanoseconds.
+                timeTaken = subsystems.update(deltaTime / 1000.0f);
     
-                if (timeTaken < 1000 / targetFPS) {
+                // Sleep to maintain target FPS
+                long sleepTime = (1000 / targetFPS) - (timeTaken / 1000000);
+                if (sleepTime > 0) {
                     try {
-                        if (targetFPS - timeTaken != 0) {
-                            System.out.println("Sleeping ig");
-                            Thread.sleep(1000 / targetFPS - timeTaken);
-                        }
+                        Thread.sleep(sleepTime);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                } else {
-                    System.out.println("Frame time did not match target FPS for this frame (" + targetFPS + "). Total time taken was " + timeTaken);
                 }
             }
         });
@@ -133,33 +115,8 @@ public class GameEngine implements GameObjectManager {
         gameLoopThread.start();
     }
 
-    /**
-     * Update the game engine's subsystems using the given delta time by a single tick. 
-     * This will update the rendering engine, physics engine, and scripting engine.
-     * @param dt The delta time since the last update.
-     * @return The time taken to update this frame.
-     */
-    public long update(float dt) {
-        long startTime = System.currentTimeMillis();
-
-        renderingEngine.render();
-        physicsEngine.updateSimulation(1 / 60.0);
-        scriptingEngine.updateScripts(dt);
-        window.getKeyInput().clear();
-
-        return System.currentTimeMillis() - startTime;
-    }
-
-    public RenderingEngine getRenderingEngine() {
-        return renderingEngine;
-    }
-
-    public PhysicsEngine getPhysicsEngine() {
-        return physicsEngine;
-    }
-
-    public ScriptingEngine getScriptingEngine() {
-        return scriptingEngine;
+    public EngineSubsystems getSubsystems() {
+        return subsystems;
     }
 
     public Window getWindow() {
@@ -188,57 +145,12 @@ public class GameEngine implements GameObjectManager {
 
     @Override
     public GameComponent createComponent(GameComponent component) {
-        if (component instanceof Script) {
-            scriptingEngine.setToBeAdded((Script) component);
-        }
-        else if (component instanceof PhysicsBody) {
-            physicsEngine.addBody((PhysicsBody) component);
-        }
-        else if (component instanceof PhysicsCollider) {
-            physicsEngine.addCollider((PhysicsCollider) component);
-        }
-        else if (component instanceof RenderInstance) {
-            renderingEngine.addInstance((RenderInstance) component);
-        }
-        else if (component instanceof Camera) {
-            renderingEngine.getScene().setCamera((Camera) component);
-        }
-        else if (component instanceof DirectionalLight) {
-            renderingEngine.getScene().setDirectionalLight((DirectionalLight) component);
-        }
-        else if (component instanceof PositionalLight) {
-            renderingEngine.getScene().addPositionalLight((PositionalLight) component);
-        }
-        return component;
+        return subsystems.addComponent(component);
     }
 
     @Override
     public void disposeComponent(GameComponent component) {
-        if (component instanceof Script) {
-            scriptingEngine.setForRemoval((Script) component);
-        }
-        else if (component instanceof PhysicsBody) {
-            physicsEngine.removeBody((PhysicsBody) component);
-        }
-        else if (component instanceof PhysicsCollider) {
-            physicsEngine.removeCollider((PhysicsCollider) component);
-        }
-        else if (component instanceof RenderInstance) {
-            renderingEngine.removeInstance((RenderInstance) component);
-        }
-        else if (component instanceof Camera) {
-            if (renderingEngine.getScene().getCamera() == component) {
-                renderingEngine.getScene().setCamera(null);
-            }
-        }
-        else if (component instanceof DirectionalLight) {
-            if (renderingEngine.getScene().getDirectionalLight() == component) {
-                renderingEngine.getScene().setDirectionalLight(null);
-            }
-        }
-        else if (component instanceof PositionalLight) {
-            renderingEngine.getScene().removePositionalLight((PositionalLight) component);
-        }
+        subsystems.removeComponent(component);
     }
 
     @Override

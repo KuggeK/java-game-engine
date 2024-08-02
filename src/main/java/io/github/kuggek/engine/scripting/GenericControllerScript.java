@@ -3,6 +3,7 @@ package io.github.kuggek.engine.scripting;
 import static java.awt.event.KeyEvent.*;
 
 import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.subsystems.SubsystemSettings;
 
 public class GenericControllerScript extends Script {
 
@@ -18,7 +19,7 @@ public class GenericControllerScript extends Script {
     }
 
     @Override
-    public void update(KeyInput keyInput, float deltaTime) {
+    public void update(KeyInput keyInput, float deltaTime, SubsystemSettings settings) {
         float forwardVel = 0;
 
         if (keyInput.isKeyHeld(VK_W)) {
