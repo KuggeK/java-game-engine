@@ -71,8 +71,8 @@ public class GameScene {
     }
 
     /**
-     * Loads a scene with the given ID from a JSON file
-     * @param sceneID The ID of the scene to load
+     * Loads a scene with the given name from a JSON file
+     * @param sceneName The name of the scene to load
      * @return The loaded scene
      * @throws IOException If the file cannot be read
      */

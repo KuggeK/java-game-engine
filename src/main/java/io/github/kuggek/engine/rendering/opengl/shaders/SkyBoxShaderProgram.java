@@ -31,7 +31,7 @@ public class SkyBoxShaderProgram implements ShaderProgram {
      * @param gl The OpenGL context
      * @param vertexShaderFile The vertex shader file name. 
      * @param fragmentShaderFile The fragment shader file. 
-     * @param skyBoxVBO The VBO for the skybox vertices
+     * @param skybox The skybox to render.
      * @throws Exception If the shader program could not be created.
      */
     public SkyBoxShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile, SkyBox skybox) throws Exception {

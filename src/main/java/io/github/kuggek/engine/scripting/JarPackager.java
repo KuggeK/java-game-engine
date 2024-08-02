@@ -15,7 +15,7 @@ public class JarPackager {
     /**
      * Package all Java .class files in the given directory and subdirectories into a jar file.
      * @param jarName The name of the jar file to create.
-     * @param directory The directory to search for .class files in.
+     * @param dirPath The directory to search for .class files in.
      * @throws IOException 
      * @throws FileNotFoundException 
      */

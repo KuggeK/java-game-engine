@@ -93,7 +93,7 @@ public interface PhysicsBody {
 
     /**
      * Set whether the physics body is kinematic or not.
-     * @param isKinematic True if the physics body should be kinematic, false otherwise.
+     * @param kinematic True if the physics body should be kinematic, false otherwise.
      */
     void setKinematic(boolean kinematic);
 
@@ -107,7 +107,7 @@ public interface PhysicsBody {
      * Set the mass of the physics body. This only has an effect if the body is not kinematic 
      * because kinematic bodies are treated as having infinite mass. 
      * The mass will however be stored and used if the body is later set to be dynamic.
-     * @param mass The mass to set.
+     * @param newMass The mass to set.
      */
     void setMass(double newMass);
     /**

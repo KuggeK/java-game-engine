@@ -122,7 +122,6 @@ public class GameObject {
     /**
      * Remove a component of a specific type from the game object if it has one.
      * @param type The type of the component to remove.
-     * @return True if a component of the specified type was removed, false otherwise.
      */
     public void removeComponentOfType(Class<? extends GameComponent> type) {
         components.remove(type);

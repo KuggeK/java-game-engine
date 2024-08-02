@@ -163,7 +163,7 @@ public class PhysicsBodyComponent extends GameComponent implements PhysicsBody {
 
     /**
      * Set whether the physics body is kinematic or not.
-     * @param isKinematic True if the physics body should be kinematic, false otherwise.
+     * @param kinematic True if the physics body should be kinematic, false otherwise.
      */
     public void setKinematic(boolean kinematic) {
         this.isKinematic = kinematic;
@@ -191,7 +191,7 @@ public class PhysicsBodyComponent extends GameComponent implements PhysicsBody {
      * Set the mass of the physics body. This only has an effect if the body is not kinematic 
      * because kinematic bodies are treated as having infinite mass. 
      * The mass will however be stored and used if the body is later set to be dynamic.
-     * @param mass The mass to set.
+     * @param newMass The mass to set.
      */
     public void setMass(double newMass) {
         this.mass = newMass;
@@ -228,7 +228,6 @@ public class PhysicsBodyComponent extends GameComponent implements PhysicsBody {
 
     /**
      * Link the physics body to the given ODE world so that it can participate in the physics simulation.
-     * @param this The physics body to link.
      * @param world The ODE world to link to.
      */
     public void linkToWorld(DWorld world) {

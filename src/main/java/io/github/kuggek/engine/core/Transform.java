@@ -107,10 +107,8 @@ public class Transform {
 
     /**
      * Moves the object towards the specified direction by the specified distance
-     * @param xDir
-     * @param yDir
-     * @param zDir
-     * @param distance
+     * @param direction The direction to move towards
+     * @param distance The distance to move
      */
     public void moveTowards(Vector3f direction, float distance) {
         helperVector.set(direction).normalize().mul(distance);

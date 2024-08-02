@@ -27,7 +27,6 @@ public class GameSceneAdapters {
      * Also registers the required adapters for JOML classes to handle Vectors/Quaternions.
      * This method should be called before deserializing a GameScene object.
      * @param builder
-     * @param debugMode If true, the mesh and texture files will not be loaded and dummy objects will be created instead.
      */
     public static void registerAdapters(GsonBuilder builder) {
         JOMLAdapters.registerAdapters(builder);
