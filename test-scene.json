@@ -26,7 +26,7 @@
                 "ball"
             ],
             "components": {
-                "kugge.engine.ecs.components.physics.PhysicsBodyComponent": {
+                "io.github.kuggek.engine.ecs.components.physics.PhysicsBodyComponent": {
                     "ID": 1,
                     "restitution": 1,
                     "isKinematic": false,
@@ -34,12 +34,12 @@
                     "colliderID": 1,
                     "influencedByGravity": true
                 },
-                "kugge.engine.ecs.components.physics.PhysicsColliderComponent": {
+                "io.github.kuggek.engine.ecs.components.physics.PhysicsColliderComponent": {
                     "ID": 1,
                     "colliderType": "SPHERE",
                     "collisionListeners": []
                 },
-                "kugge.engine.ecs.components.rendering.RenderInstanceComponent": {
+                "io.github.kuggek.engine.ecs.components.rendering.RenderInstanceComponent": {
                     "ID": 1,
                     "meshID": 2,
                     "materialID": 2,
@@ -67,7 +67,7 @@
                     },
                     "tags":[],
                     "components":{
-                        "kugge.engine.ecs.components.rendering.RenderInstanceComponent": {
+                        "io.github.kuggek.engine.ecs.components.rendering.RenderInstanceComponent": {
                             "ID": 69,
                             "meshID": 2,
                             "materialID": 4,
@@ -84,7 +84,7 @@
                                 "10241": "9729"
                             }
                         },
-                        "kugge.engine.ecs.components.physics.PhysicsBodyComponent": {
+                        "io.github.kuggek.engine.ecs.components.physics.PhysicsBodyComponent": {
                             "ID": 69,
                             "restitution": 1,
                             "isKinematic": true,
@@ -92,7 +92,7 @@
                             "colliderID": 69,
                             "influencedByGravity": true
                         },
-                        "kugge.engine.ecs.components.physics.PhysicsColliderComponent": {
+                        "io.github.kuggek.engine.ecs.components.physics.PhysicsColliderComponent": {
                             "ID": 69,
                             "colliderType":"SPHERE",
                             "collisionListeners":[]
@@ -127,7 +127,7 @@
             ],
             "components": {
                 
-                "kugge.engine.ecs.components.physics.PhysicsBodyComponent": {
+                "io.github.kuggek.engine.ecs.components.physics.PhysicsBodyComponent": {
                     "ID": 2,
                     "restitution": 1,
                     "isKinematic": true,
@@ -135,11 +135,11 @@
                     "colliderID": 2,
                     "influencedByGravity": true
                 },
-                "kugge.engine.ecs.components.physics.PhysicsColliderComponent": {
+                "io.github.kuggek.engine.ecs.components.physics.PhysicsColliderComponent": {
                     "ID": 2,
                     "colliderType": "BOX"
                 },
-                "kugge.engine.ecs.components.rendering.RenderInstanceComponent": {
+                "io.github.kuggek.engine.ecs.components.rendering.RenderInstanceComponent": {
                     "ID": 2,
                     "meshID": 1,
                     "materialID": 3,
@@ -185,13 +185,13 @@
                 "camera"
             ],
             "components": {
-                "kugge.engine.ecs.components.rendering.CameraComponent": {
+                "io.github.kuggek.engine.ecs.components.rendering.CameraComponent": {
                     "fov": 60,
                     "near": 0.1,
                     "far": 100,
                     "orthographic": false
                 },
-                "kugge.engine.scripting.GenericControllerScript": {
+                "io.github.kuggek.engine.scripting.GenericControllerScript": {
                     "movementSpeed": 15,
                     "rotationSpeed": 0.01
                 }
@@ -206,7 +206,7 @@
                 "scale":[0,0,0]
             },
             "components":{
-                "kugge.engine.ecs.components.rendering.lights.DirectionalLightComponent": {
+                "io.github.kuggek.engine.ecs.components.rendering.lights.DirectionalLightComponent": {
                     "ambient": [0.6, 0.6, 0.6, 1],
                     "diffuse": [0.6, 0.6, 0.6, 1],
                     "specular": [0.6, 0.6, 0.6, 1],
