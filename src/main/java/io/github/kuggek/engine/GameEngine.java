@@ -99,6 +99,8 @@ public class GameEngine implements GameObjectManager {
 
                 // Update the engine subsystems. Time taken is in nanoseconds.
                 timeTaken = subsystems.update(deltaTime / 1000.0f);
+
+                window.getKeyInput().clear();
     
                 // Sleep to maintain target FPS
                 long sleepTime = (1000 / targetFPS) - (timeTaken / 1000000);
