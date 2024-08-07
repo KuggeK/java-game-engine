@@ -1,18 +1,13 @@
 package io.github.kuggek.engine.core.assets;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.joml.Vector4f;
@@ -35,18 +30,18 @@ public class SQLiteAssetManager implements AssetManager {
         }
     }
 
-    private void initTables() {
-        File tablesDirectory = new File(SQLiteAssetManager.class.getResource("/db/tables/").getPath());
-        Arrays.stream(tablesDirectory.listFiles())
-            .sorted((f1, f2) -> f1.getName().compareTo(f2.getName()))
-            .forEach(f -> {
-                try {
-                    String query = Files.readString(f.toPath());
-                    conn.createStatement().execute(query);
-                } catch (IOException | SQLException e) {
-                    e.printStackTrace();
-                }
-            });
+    private void initTables() { 
+        try {
+            String[] tables = ResourceManager.listFilesIn("db/tables/");
+            
+            for (String table : tables) {
+                System.out.println(table);
+                String query = ResourceManager.readFile(table);
+                conn.createStatement().execute(query);
+            }
+        } catch (IOException | SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public static SQLiteAssetManager getInstance() {
@@ -200,8 +195,8 @@ public class SQLiteAssetManager implements AssetManager {
 
     private String fetchQuery(String queryName) {
         try {
-            return Files.readString(Paths.get(SQLiteAssetManager.class.getResource("/db/queries/" + queryName).toURI()));
-        } catch (IOException | URISyntaxException e) {
+            return ResourceManager.readFile("db/queries/" + queryName);
+        } catch (IOException e) {
             e.printStackTrace();
             return "";
         }

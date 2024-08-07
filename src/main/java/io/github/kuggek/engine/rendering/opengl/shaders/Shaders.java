@@ -1,27 +1,15 @@
 package io.github.kuggek.engine.rendering.opengl.shaders;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import com.jogamp.opengl.GL4;
+
+import io.github.kuggek.engine.core.assets.ResourceManager;
 
 public class Shaders {
     
     public record Shader(int type, String filename) {}
-
-    public static String[] readSourceFromFile(String fileName) throws IOException, URISyntaxException {
-        List<String> linesList = Files.readAllLines(Paths.get(Shaders.class.getResource("/shaders/" + fileName).toURI()));
-        linesList = linesList.stream().map(line -> line.concat("\n")).collect(Collectors.toList());
-        String[] linesArr = new String[linesList.size()];
-        linesList.toArray(linesArr);
-        return linesArr;
-    }
 
     public static int getShaderStatus(int shader, GL4 gl, int statusType) {
         IntBuffer intBuffer = IntBuffer.allocate(1);
@@ -32,10 +20,15 @@ public class Shaders {
 
     public static int loadShaders(Shader[] shaders, GL4 gl) throws Exception {
         int program = gl.glCreateProgram();
+        String shaderFolder = "shaders/";
         for (int i = 0; i < shaders.length; ++i) {
             Shader shader = shaders[i];
             int shaderId = gl.glCreateShader(shader.type);
-            String[] source = readSourceFromFile(shader.filename);
+            String[] source = ResourceManager.readFile(shaderFolder + shader.filename).split("\n");
+            
+            for (int j = 0; j < source.length; ++j) {
+                source[j] = source[j] + "\n";
+            }
 
             gl.glShaderSource(shaderId, source.length, source, null, 0);
             gl.glCompileShader(shaderId);
