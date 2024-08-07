@@ -2,8 +2,10 @@ package io.github.kuggek.engine.scripting;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.jar.JarFile;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -11,12 +13,25 @@ import javax.tools.ToolProvider;
 public class ScriptLoader {
 
     private static JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
-    private static JarClassLoader jarClassLoader = new JarClassLoader((URLClassLoader)ScriptLoader.class.getClassLoader());
-    
+    private static Instrumentation instrumentation;
+    private static JarClassLoader jarClassLoader = new JarClassLoader(new URLClassLoader(new URL[0], ScriptLoader.class.getClassLoader()));
+
+    public static void premain(String agentArgs, Instrumentation inst) {
+        instrumentation = inst;
+        System.out.println("Agent loaded.");
+    }
+
     public static Script loadScript(String scriptName) {
         try {
             System.out.println(scriptName);
-            Class<?> scriptClass = jarClassLoader.loadClass(scriptName);
+            Class<?> scriptClass = null;
+            // If we are running this as a java agent, we can load the class directly with the default class loader.
+            // Otherwise, we need to use our custom class loader.
+            if (instrumentation == null) {
+                scriptClass = jarClassLoader.loadClass(scriptName);
+            } else  {
+                scriptClass = Class.forName(scriptName);
+            }
             return (Script) scriptClass.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             e.printStackTrace();
@@ -45,7 +60,7 @@ public class ScriptLoader {
     }
 
     /**
-     * Recursively compile all scripts in the given directory to a jar file.
+     * Recursively compile all scripts in the given directory.
      * @param directory The directory to search for scripts in.
      */
     public static void compileAllScripts(File directory) {
@@ -83,8 +98,11 @@ public class ScriptLoader {
 
     public static void addJarToClasspath(String jarName) {
         try {
-            URL scriptsJarURL = new File(jarName).toURI().toURL();
-            jarClassLoader.addURL(scriptsJarURL);
+            if (instrumentation == null) {
+                jarClassLoader.addURL(new File(jarName).toURI().toURL());
+            } else {
+                instrumentation.appendToSystemClassLoaderSearch(new JarFile(jarName));
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
