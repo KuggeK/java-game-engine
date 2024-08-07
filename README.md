@@ -12,7 +12,7 @@ You can use the engine in your own project easily with Maven by setting this dep
 <dependency>
     <groupId>io.github.kuggek</groupId>
     <artifactId>engine</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
 </dependency>
 ```
 When using the Maven exec plugin to run the program (with `mvn exec:java` from the command line in the project directory), you need to set the MAVEN_OPTS environment variable to "--add-exports java.base/java.lang=ALL-UNNAMED --add-exports java.desktop/sun.awt=ALL-UNNAMED --add-exports java.desktop/sun.java2d=ALL-UNNAMED". If you are running the engine jar, you need to set these same variables on the command line (java --add-exports java.base/java.lang=ALL-UNNAMED --add-exports java.desktop/sun.awt=ALL-UNNAMED --add-exports java.desktop/sun.java2d=ALL-UNNAMED -jar engine-1.0.jar). This is a problem with the JOGL library. A discussion about this can be found [HERE](https://jogamp.org/bugzilla/show_bug.cgi?id=1317). This also applies when using the engine as a library.
