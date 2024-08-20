@@ -4,6 +4,8 @@
     "gameObjects": [
         {
             "ID": 1,
+            "name": "Ball",
+            "disabled": false,
             "transform": {
                 "position": [
                     2,
@@ -27,26 +29,25 @@
             ],
             "components": {
                 "io.github.kuggek.engine.ecs.components.physics.PhysicsBodyComponent": {
-                    "ID": 1,
                     "restitution": 1,
                     "isKinematic": false,
                     "mass": 100,
-                    "colliderID": 1,
-                    "influencedByGravity": true
+                    "influencedByGravity": true,
+                    "colliderID": 1
                 },
-                "io.github.kuggek.engine.ecs.components.physics.PhysicsColliderComponent": {
+                "io.github.kuggek.engine.ecs.components.physics.colliders.SphereColliderComponent": {
                     "ID": 1,
-                    "colliderType": "SPHERE",
+                    "radius": 3,
                     "collisionListeners": []
                 },
                 "io.github.kuggek.engine.ecs.components.rendering.RenderInstanceComponent": {
                     "ID": 1,
                     "meshID": 2,
-                    "materialID": 2,
-                    "texturingEnabled": true,
-                    "textureID": 2,
+                    "materialID": 6,
+                    "texturingEnabled": false,
+                    "textureID": 1,
                     "normalMapEnabled": true,
-                    "normalMapID": 3,
+                    "normalMapID": 1,
                     "lit": true,
                     "castsShadows": true,
                     "textureParameters": {
@@ -55,11 +56,14 @@
                         "10240": "9729",
                         "10241": "9729"
                     }
-                }
+                },
+                "scripts.TestScript": {}
             },
             "children": [
                 {
                     "ID": 69,
+                    "name": "GameObject",
+                    "disabled": false,
                     "transform":{
                         "position":[0,0,2],
                         "rotation":[0,0,0,1],
@@ -70,12 +74,12 @@
                         "io.github.kuggek.engine.ecs.components.rendering.RenderInstanceComponent": {
                             "ID": 69,
                             "meshID": 2,
-                            "materialID": 4,
+                            "materialID": 3,
                             "texturingEnabled": false,
-                            "textureID": 2,
-                            "normalMapEnabled": true,
-                            "normalMapID": 6,
-                            "lit": true,
+                            "textureID": 1,
+                            "normalMapEnabled": false,
+                            "normalMapID": 3,
+                            "lit": false,
                             "castsShadows": true,
                             "textureParameters": {
                                 "10242": "10497",
@@ -85,16 +89,15 @@
                             }
                         },
                         "io.github.kuggek.engine.ecs.components.physics.PhysicsBodyComponent": {
-                            "ID": 69,
                             "restitution": 1,
                             "isKinematic": true,
                             "mass": 1,
-                            "colliderID": 69,
-                            "influencedByGravity": true
+                            "influencedByGravity": true,
+                            "colliderID": 69
                         },
-                        "io.github.kuggek.engine.ecs.components.physics.PhysicsColliderComponent": {
+                        "io.github.kuggek.engine.ecs.components.physics.colliders.SphereColliderComponent": {
                             "ID": 69,
-                            "colliderType":"SPHERE",
+                            "radius": 0.25,
                             "collisionListeners":[]
                         }
                     },
@@ -104,6 +107,8 @@
         },
         {
             "ID": 2,
+            "name": "Ground",
+            "disabled": false,
             "transform": {
                 "position": [
                     0,
@@ -112,7 +117,7 @@
                 ],
                 "scale": [
                     15,
-                    1,
+                    15,
                     15
                 ],
                 "rotation": [
@@ -128,25 +133,24 @@
             "components": {
                 
                 "io.github.kuggek.engine.ecs.components.physics.PhysicsBodyComponent": {
-                    "ID": 2,
                     "restitution": 1,
                     "isKinematic": true,
                     "mass": 100,
-                    "colliderID": 2,
-                    "influencedByGravity": true
+                    "influencedByGravity": true,
+                    "colliderID": 2
                 },
-                "io.github.kuggek.engine.ecs.components.physics.PhysicsColliderComponent": {
+                "io.github.kuggek.engine.ecs.components.physics.colliders.BoxColliderComponent": {
                     "ID": 2,
-                    "colliderType": "BOX"
+                    "scale": [15, 15, 15]
                 },
                 "io.github.kuggek.engine.ecs.components.rendering.RenderInstanceComponent": {
                     "ID": 2,
                     "meshID": 1,
-                    "materialID": 3,
+                    "materialID": 2,
                     "texturingEnabled": false,
-                    "textureID": 2,
-                    "normalMapEnabled": true,
-                    "normalMapID": 6,
+                    "textureID": 1,
+                    "normalMapEnabled": false,
+                    "normalMapID": 1,
                     "lit": true,
                     "castsShadows": true,
                     "textureParameters": {
@@ -163,6 +167,8 @@
         },
         {
             "ID": 3,
+            "name": "GameObject",
+            "disabled": false,
             "transform": {
                 "position": [
                     0,
@@ -189,7 +195,8 @@
                     "fov": 60,
                     "near": 0.1,
                     "far": 100,
-                    "orthographic": false
+                    "orthographic": false,
+                    "activeOnStart": true
                 },
                 "io.github.kuggek.engine.scripting.GenericControllerScript": {
                     "movementSpeed": 15,
@@ -200,6 +207,8 @@
         },
         {
             "ID": 4,
+            "name": "GameObject",
+            "disabled": false,
             "transform": {
                 "position":[0,0,0],
                 "rotation":[0,0,0,1],
@@ -210,10 +219,38 @@
                     "ambient": [0.6, 0.6, 0.6, 1],
                     "diffuse": [0.6, 0.6, 0.6, 1],
                     "specular": [0.6, 0.6, 0.6, 1],
-                    "direction": [1 ,-1, 0]
+                    "direction": [1 ,-1, 0],
+                    "activeOnStart": true
                 }
             },
             "children": []
+        },
+        {
+            "ID": 100,
+            "name": "GameObject",
+            "disabled": false,
+            "transform":{
+                "position":[0,-10,0],
+                "rotation":[0,-1,0,1],
+                "scale": [0,0,0]
+            },
+            "components":{
+                "io.github.kuggek.engine.ecs.components.rendering.CameraComponent":{
+                    "fov": 60,
+                    "near": 0.1,
+                    "far": 100,
+                    "orthographic": false,
+                    "activeOnStart": false
+                },
+                "io.github.kuggek.engine.scripting.GenericControllerScript":{
+                    "movementSpeed": 20,
+                    "rotationSpeed": 0.01
+                },
+                "scripts.nested.NestedScript": {
+                    "toPrint": "Hehei"
+                }
+            },
+            "children":[]
         }
     ]
 }
