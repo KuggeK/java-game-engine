@@ -19,9 +19,10 @@ import org.ode4j.ode.OdeMath;
 
 public class Collisions {
 
-    public static Map<Integer, DVector3> collideSpace(DSpace space) {
-        Map<Integer, DVector3> corrections = new HashMap<>();
+    public static Map<PhysicsBody, DVector3> collideSpace(DSpace space) {
+        Map<PhysicsBody, DVector3> corrections = new HashMap<>();
         space.collide(null, (_data, o1, o2) -> {
+
             // Get collision info
             Optional<Collision> potentialCollision = Collisions.collide(o1, o2);
 
@@ -115,7 +116,7 @@ public class Collisions {
                     b1NewAngularVel.sub(matrixRes);
 
                     // Positional correction.
-                    corrections.put(body1.getID(), corrections.getOrDefault(body1.getID(), new DVector3()).reSub(correction));
+                    corrections.put(body1, corrections.getOrDefault(body1, new DVector3()).reSub(correction));
                 }   
                 
                 if (!b2.isKinematic()) {
@@ -127,7 +128,7 @@ public class Collisions {
                     b1NewAngularVel.add(matrixRes);
                     
                     // Positional correction.
-                    corrections.put(body2.getID(), corrections.getOrDefault(body2.getID(), new DVector3()).reAdd(correction));
+                    corrections.put(body2, corrections.getOrDefault(body2, new DVector3()).reAdd(correction));
                 }          
             }
 
@@ -247,7 +248,11 @@ public class Collisions {
 
         DVector3 n = new DVector3();
         n.eqDiff(pos2, pos1);
-        n.normalize();
+        if (n.length() == 0) {
+            n.set(0, 1, 0);
+        } else {
+            n = n.normalize();
+        }
 
         DVector3 contactPoint = new DVector3();
         contactPoint.eqSum(pos1, n.scale(radius1));
