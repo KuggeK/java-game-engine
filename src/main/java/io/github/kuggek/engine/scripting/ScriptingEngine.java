@@ -3,7 +3,7 @@ package io.github.kuggek.engine.scripting;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.github.kuggek.engine.subsystems.SubsystemSettings;
+import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 public class ScriptingEngine {
 
     private Set<Script> scripts;
@@ -24,16 +24,21 @@ public class ScriptingEngine {
         toAdd = new HashSet<>();
     }
 
-    public void updateScripts(float dt, SubsystemSettings settings) {
-        // Start new scripts
+    public void updateScripts(float dt, EngineRuntimeSettings settings) {
+        // Start new scripts (excluding disabled ones)
         for (Script script : newScripts) {
-            script.start();
+            if (!script.isDisabled()) {
+                script.start(settings);
+            }
         }
-        newScripts.clear();
+        // Don't remove disabled scripts because they haven't been started yet
+        newScripts.removeIf(script -> !script.isDisabled());
 
-        // Update all scripts
+        // Update scripts (excluding disabled ones)
         for (Script script : scripts) {
-            script.update(keyInput, dt, settings);
+            if (!script.isDisabled()) {
+                script.update(keyInput, dt, settings);
+            }
         }
 
         // Remove scripts
@@ -64,5 +69,12 @@ public class ScriptingEngine {
      */
     public void setForRemoval(Script script) {
         toRemove.add(script);
+    }
+
+    public void clear() {
+        scripts.clear();
+        newScripts.clear();
+        toRemove.clear();
+        toAdd.clear();
     }
 }

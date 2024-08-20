@@ -3,7 +3,7 @@ package io.github.kuggek.engine.scripting;
 import static java.awt.event.KeyEvent.*;
 
 import io.github.kuggek.engine.ecs.components.ComponentField;
-import io.github.kuggek.engine.subsystems.SubsystemSettings;
+import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class GenericControllerScript extends Script {
 
@@ -14,12 +14,12 @@ public class GenericControllerScript extends Script {
     private float rotationSpeed = 0.01f;
 
     @Override
-    public void start() {
+    public void start(EngineRuntimeSettings settings) {
         
     }
 
     @Override
-    public void update(KeyInput keyInput, float deltaTime, SubsystemSettings settings) {
+    public void update(KeyInput keyInput, float deltaTime, EngineRuntimeSettings settings) {
         float forwardVel = 0;
 
         if (keyInput.isKeyHeld(VK_W)) {
@@ -56,7 +56,7 @@ public class GenericControllerScript extends Script {
         }
 
         if (rotY != 0) {
-            transform.getRotation().rotateLocalY(rotY);
+            transform.setRotation(transform.getRotation().rotateLocalY(rotY));
         }
 
         float rotX = 0;
@@ -69,7 +69,7 @@ public class GenericControllerScript extends Script {
         }
 
         if (rotX != 0) {
-            transform.getRotation().rotateX(rotX);
+            transform.setRotation(transform.getRotation().rotateX(rotX));
         }
 
         float horizontalVel = 0;
