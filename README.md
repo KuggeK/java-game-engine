@@ -29,3 +29,6 @@ For the physics simulation I am using ode4j (Java port of Open Dynamics Engine).
 
 ### SQLite JDBC Driver
 For the game engine's asset database I am using SQLite and the Java driver for creating and connecting to it.
+
+### Gson
+Google's JSON library Gson is used for serializing and deserializing project and scene data.
