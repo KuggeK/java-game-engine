@@ -2,21 +2,21 @@ package io.github.kuggek.engine.ecs.components.rendering.lights;
 
 import org.joml.Vector3f;
 
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
 import io.github.kuggek.engine.rendering.objects.lights.PositionalLight;
 
 public class PositionalLightComponent extends LightComponent implements PositionalLight {
     
-    @ComponentField
+    @EditableComponentField
     private float constant;
 
-    @ComponentField
+    @EditableComponentField
     private float linear;
 
-    @ComponentField
+    @EditableComponentField
     private float quadratic;
 
-    @ComponentField
+    @EditableComponentField
     private float radius;
 
     public PositionalLightComponent() {

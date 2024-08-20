@@ -3,12 +3,12 @@ package io.github.kuggek.engine.ecs.components.physics.colliders;
 import org.joml.Vector3f;
 import org.ode4j.ode.DSphere;
 
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
 import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class SphereColliderComponent extends PhysicsColliderComponent {
 
-    @ComponentField
+    @EditableComponentField
     private float radius;
 
     public SphereColliderComponent() {

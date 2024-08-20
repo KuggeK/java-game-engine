@@ -57,7 +57,10 @@
                         "10241": "9729"
                     }
                 },
-                "scripts.TestScript": {}
+                "scripts.TestScript": {
+                    "toPrint": "This is editable",
+                    "toRead": "This is readable"
+                }
             },
             "children": [
                 {
@@ -245,9 +248,6 @@
                 "io.github.kuggek.engine.scripting.GenericControllerScript":{
                     "movementSpeed": 20,
                     "rotationSpeed": 0.01
-                },
-                "scripts.nested.NestedScript": {
-                    "toPrint": "Hehei"
                 }
             },
             "children":[]

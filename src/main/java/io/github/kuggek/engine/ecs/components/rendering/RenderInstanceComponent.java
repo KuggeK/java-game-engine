@@ -7,35 +7,35 @@ import org.joml.Matrix4f;
 
 import io.github.kuggek.engine.core.Transform;
 import io.github.kuggek.engine.ecs.GameComponent;
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
 import io.github.kuggek.engine.rendering.objects.RenderInstance;
 
 public class RenderInstanceComponent extends GameComponent implements RenderInstance {
-    @ComponentField
+    @EditableComponentField
     private int meshID;
 
-    @ComponentField
+    @EditableComponentField
     private int materialID;
 
-    @ComponentField
+    @EditableComponentField
     private boolean texturingEnabled;
 
-    @ComponentField
+    @EditableComponentField
     private int textureID;
 
-    @ComponentField
+    @EditableComponentField
     private boolean normalMapEnabled;
     
-    @ComponentField
+    @EditableComponentField
     private int normalMapID;
 
-    @ComponentField
+    @EditableComponentField
     private boolean lit;
 
-    @ComponentField
+    @EditableComponentField
     private boolean castsShadows;
 
-    @ComponentField
+    @EditableComponentField
     private Map<Integer, Integer> textureParameters;
 
     public RenderInstanceComponent() {

@@ -2,15 +2,15 @@ package io.github.kuggek.engine.scripting;
 
 import static java.awt.event.KeyEvent.*;
 
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
 import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class GenericControllerScript extends Script {
 
-    @ComponentField
+    @EditableComponentField
     private float movementSpeed = 0.001f;
     
-    @ComponentField
+    @EditableComponentField
     private float rotationSpeed = 0.01f;
 
     @Override

@@ -2,16 +2,16 @@ package io.github.kuggek.engine.ecs.components.rendering.lights;
 
 import org.joml.Vector3f;
 
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
 import io.github.kuggek.engine.rendering.objects.lights.DirectionalLight;
 import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class DirectionalLightComponent extends LightComponent implements DirectionalLight {
 
-    @ComponentField
+    @EditableComponentField
     private Vector3f direction;
 
-    @ComponentField
+    @EditableComponentField
     private boolean activeOnStart = false;
 
     public DirectionalLightComponent(float[] ambient, float[] diffuse, float[] specular, float[] direction) {

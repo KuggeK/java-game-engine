@@ -7,7 +7,8 @@ import java.util.Map;
 import java.util.Set;
 
 import io.github.kuggek.engine.core.Transform;
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
+import io.github.kuggek.engine.ecs.components.ReadableComponentField;
 import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 /**
@@ -78,7 +79,8 @@ public abstract class GameComponent {
     }
 
     /**
-     * Get all fields of a component that are annotated with {@link ComponentField}. 
+     * Get all fields of a component that are annotated with {@link EditableComponentField} or
+     * {@link ReadableComponentField}. 
      * This method will return all fields of the component class and all superclasses
      * @param componentClass
      * @return
@@ -88,7 +90,7 @@ public abstract class GameComponent {
         Class<?> type = componentClass;
         while (type != null) {
             for (Field field : type.getDeclaredFields()) {
-                if (field.isAnnotationPresent(ComponentField.class)) {
+                if (field.isAnnotationPresent(EditableComponentField.class) || field.isAnnotationPresent(ReadableComponentField.class)) {
                     fields.add(field);
                 }
             }
@@ -98,7 +100,8 @@ public abstract class GameComponent {
     }
 
     /**
-     * Get the values of all fields of a component that are annotated with {@link ComponentField}.
+     * Get the values of all fields of a component that are annotated with {@link EditableComponentField} 
+     * or {@link ReadableComponentField}.
      * This method will return a map of field names to field values.
      * @param component The component to get the field values from.
      * @return A map of field names to field values.

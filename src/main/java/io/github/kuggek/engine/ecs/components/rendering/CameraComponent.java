@@ -6,24 +6,24 @@ import org.joml.Vector3f;
 import io.github.kuggek.engine.core.Transform;
 import io.github.kuggek.engine.ecs.GameComponent;
 import io.github.kuggek.engine.ecs.GameObject;
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
 import io.github.kuggek.engine.rendering.objects.Camera;
 import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class CameraComponent extends GameComponent implements Camera {
-    @ComponentField
+    @EditableComponentField
     private float fov = 70f;
 
-    @ComponentField
+    @EditableComponentField
     private float near = 0.01f;
 
-    @ComponentField
+    @EditableComponentField
     private float far = 1000;
 
-    @ComponentField
+    @EditableComponentField
     private boolean orthographic = false;
 
-    @ComponentField
+    @EditableComponentField
     private boolean activeOnStart = false;
 
     public CameraComponent() {

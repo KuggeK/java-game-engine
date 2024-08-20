@@ -3,18 +3,18 @@ package io.github.kuggek.engine.ecs.components.rendering.lights;
 import org.joml.Vector4f;
 
 import io.github.kuggek.engine.ecs.GameComponent;
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
 import io.github.kuggek.engine.rendering.objects.lights.Light;
 
 public class LightComponent extends GameComponent implements Light {
      
-    @ComponentField
+    @EditableComponentField
     protected Vector4f ambient;
 
-    @ComponentField
+    @EditableComponentField
     protected Vector4f diffuse;
 
-    @ComponentField
+    @EditableComponentField
     protected Vector4f specular;
 
     public LightComponent(float[] ambient, float[] diffuse, float[] specular) {

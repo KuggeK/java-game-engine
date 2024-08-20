@@ -3,12 +3,12 @@ package io.github.kuggek.engine.ecs.components.physics.colliders;
 import org.joml.Vector3f;
 import org.ode4j.ode.DBox;
 
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
 import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class BoxColliderComponent extends PhysicsColliderComponent {
     
-    @ComponentField
+    @EditableComponentField
     private Vector3f scale;
 
     public BoxColliderComponent() {

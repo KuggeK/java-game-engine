@@ -11,24 +11,24 @@ import org.ode4j.ode.OdeHelper;
 import org.ode4j.ode.internal.DxMass;
 
 import io.github.kuggek.engine.ecs.GameComponent;
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
 import io.github.kuggek.engine.physics.PhysicsBody;
 import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class PhysicsBodyComponent extends GameComponent implements PhysicsBody {
-    @ComponentField
+    @EditableComponentField
     private boolean isKinematic = false;
 
-    @ComponentField
+    @EditableComponentField
     private double restitution;
     
-    @ComponentField
+    @EditableComponentField
     private double mass;
 
-    @ComponentField
+    @EditableComponentField
     private boolean influencedByGravity;
 
-    @ComponentField
+    @EditableComponentField
     private Integer colliderID;
 
     private DBody body;

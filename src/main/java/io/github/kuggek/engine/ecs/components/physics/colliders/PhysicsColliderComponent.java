@@ -18,19 +18,20 @@ import org.ode4j.ode.DSphere;
 import org.ode4j.ode.OdeHelper;
 
 import io.github.kuggek.engine.ecs.GameComponent;
-import io.github.kuggek.engine.ecs.components.ComponentField;
+import io.github.kuggek.engine.ecs.components.EditableComponentField;
+import io.github.kuggek.engine.ecs.components.ReadableComponentField;
 import io.github.kuggek.engine.physics.PhysicsCollider;
 
 public class PhysicsColliderComponent extends GameComponent implements PhysicsCollider {
 
-    @ComponentField
+    @ReadableComponentField
     private Integer ID;
     
     private ColliderType colliderType;
     
     private DGeom collider;
 
-    @ComponentField
+    @EditableComponentField
     private Set<Consumer<PhysicsCollider>> collisionListeners = new HashSet<>();
 
     public PhysicsColliderComponent(ColliderType colliderType) {
