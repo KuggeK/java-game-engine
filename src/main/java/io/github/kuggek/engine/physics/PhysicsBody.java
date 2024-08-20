@@ -9,13 +9,14 @@ import org.ode4j.ode.DWorld;
  * PhysicsBody
  */
 public interface PhysicsBody {
-    int getID();
 
+    boolean isDisabled();
+    
     DBody getBody();
 
-    int getColliderID();
-
     void linkToWorld(DWorld world);
+
+    Integer getColliderID();
 
     /**
      * Get whether the physics body is influenced by gravity or not. 

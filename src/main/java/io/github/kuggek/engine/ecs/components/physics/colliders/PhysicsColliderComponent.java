@@ -1,4 +1,4 @@
-package io.github.kuggek.engine.ecs.components.physics;
+package io.github.kuggek.engine.ecs.components.physics.colliders;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -22,11 +22,10 @@ import io.github.kuggek.engine.ecs.components.ComponentField;
 import io.github.kuggek.engine.physics.PhysicsCollider;
 
 public class PhysicsColliderComponent extends GameComponent implements PhysicsCollider {
-    
-    @ComponentField
-    private int ID;
 
     @ComponentField
+    private Integer ID;
+    
     private ColliderType colliderType;
     
     private DGeom collider;
@@ -34,8 +33,7 @@ public class PhysicsColliderComponent extends GameComponent implements PhysicsCo
     @ComponentField
     private Set<Consumer<PhysicsCollider>> collisionListeners = new HashSet<>();
 
-    public PhysicsColliderComponent(int ID, ColliderType colliderType) {
-        this.ID = ID;
+    public PhysicsColliderComponent(ColliderType colliderType) {
         switch (colliderType) {
             case BOX:
                 collider = OdeHelper.createBox(1, 1, 1);
@@ -51,11 +49,28 @@ public class PhysicsColliderComponent extends GameComponent implements PhysicsCo
         }
         this.colliderType = colliderType;
         collider.setData(this);
+        collisionListeners = new HashSet<>();
+        ID = -1;
     }
 
     public PhysicsColliderComponent(int ID, ColliderType colliderType, DSpace space) {
-        this(ID, colliderType);
+        this(colliderType);
         space.add(collider);
+    }
+
+    @Override
+    public Integer getID() {
+        return ID;
+    }
+
+    @Override
+    protected void onDisable() {
+        collider.disable();
+    }
+
+    @Override
+    protected void onEnable() {
+        collider.enable();
     }
 
     public void registerCollisionListener(Consumer<PhysicsCollider> listener) {
@@ -81,10 +96,6 @@ public class PhysicsColliderComponent extends GameComponent implements PhysicsCo
         for (Consumer<PhysicsCollider> listener : collisionListeners) {
             listener.accept(other);
         }
-    }
-
-    public int getID() {
-        return ID;
     }
 
     public DGeom getCollider() {
@@ -121,21 +132,21 @@ public class PhysicsColliderComponent extends GameComponent implements PhysicsCo
         setScale(transform.getScale());
     }
     
-    public void setBoxDimensions(float x, float y, float z) {
+    private void setBoxDimensions(float x, float y, float z) {
         if (collider instanceof DBox) {
             DBox box = (DBox) collider;
             box.setLengths(x, y, z);
         }
     }
 
-    public void setSphereRadius(float radius) {
+    private void setSphereRadius(float radius) {
         if (collider instanceof DSphere) {
             DSphere sphere = (DSphere) collider;
             sphere.setRadius(radius);
         }
     }
 
-    public void setCapsuleDimensions(float radius, float length) {
+    private void setCapsuleDimensions(float radius, float length) {
         if (collider instanceof DCapsule) {
             DCapsule capsule = (DCapsule) collider;
             capsule.setParams(radius, length);

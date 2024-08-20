@@ -13,11 +13,9 @@ import org.ode4j.ode.internal.DxMass;
 import io.github.kuggek.engine.ecs.GameComponent;
 import io.github.kuggek.engine.ecs.components.ComponentField;
 import io.github.kuggek.engine.physics.PhysicsBody;
+import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class PhysicsBodyComponent extends GameComponent implements PhysicsBody {
-    @ComponentField
-    private int ID;
-
     @ComponentField
     private boolean isKinematic = false;
 
@@ -26,34 +24,56 @@ public class PhysicsBodyComponent extends GameComponent implements PhysicsBody {
     
     @ComponentField
     private double mass;
-    
-    @ComponentField
-    private int colliderID;
 
     @ComponentField
     private boolean influencedByGravity;
 
+    @ComponentField
+    private Integer colliderID;
+
     private DBody body;
 
-    public PhysicsBodyComponent(int ID, boolean isKinematic) {
+    public PhysicsBodyComponent() {
         super();
-        this.ID = ID;
-        this.isKinematic = isKinematic;
+        this.isKinematic = false;
         this.restitution = 0.5;
         this.mass = 1;
         this.influencedByGravity = !isKinematic;
     }
 
-    public int getID() {
-        return ID;
+    @Override
+    protected void onAwake(EngineRuntimeSettings settings) {
+        if (colliderID != null) {
+            boolean linked = settings.getPhysicsSettings().linkBodyAndCollider(this, colliderID);
+            if (!linked) {
+                System.out.println("Failed to link body and collider with ID " + colliderID);
+                colliderID = null;
+            }
+        } else {
+            System.out.println("No collider ID set for physics body");
+        }
     }
 
     public DBody getBody() {
         return body;
     }
 
-    public int getColliderID() {
+    public Integer getColliderID() {
         return colliderID;
+    }
+
+    @Override
+    protected void onDisable() {
+        if (body != null) {
+            body.disable();
+        }
+    }
+
+    @Override
+    protected void onEnable() {
+        if (body != null) {
+            body.enable();
+        }
     }
 
     /**

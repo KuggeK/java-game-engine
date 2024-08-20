@@ -14,23 +14,19 @@ public interface PhysicsCollider {
         CAPSULE
     }
 
+    boolean isDisabled();
+
+    Integer getID();
+
     void registerCollisionListener(Consumer<PhysicsCollider> listener);
 
     void unregisterCollisionListener(Consumer<PhysicsCollider> listener);
 
     void onCollision(PhysicsCollider other);
 
-    int getID();
-
     DGeom getCollider();
 
     void setCollider(ColliderType colliderType);
-    
-    void setBoxDimensions(float x, float y, float z);
-
-    void setSphereRadius(float radius);
-
-    void setCapsuleDimensions(float radius, float length);
 
     void setScale(Vector3f scale);
 

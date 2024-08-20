@@ -15,20 +15,19 @@ import org.ode4j.ode.DSpace;
 import org.ode4j.ode.DWorld;
 import org.ode4j.ode.OdeHelper;
 
-public class PhysicsEngine {
+public class PhysicsEngine implements PhysicsSettings {
     
     private DWorld world;
     private DSpace space;
 
-    private Map<Integer, PhysicsBody> bodies;
+    private Set<PhysicsBody> bodies;
     private Map<Integer, PhysicsCollider> colliders;
 
-    private Map<Integer, DVector3> corrections;
+    private Map<PhysicsBody, DVector3> corrections;
 
     private Vector3f gravity;
 
-    private Map<Integer, Integer> bodyColliderLinks;
-    private Set<Integer> unlinkedBodies;
+    private Map<PhysicsBody, PhysicsCollider> bodyColliderLinks;
 
     private Set<DBody> bodiesToDestroy;
     private Set<DGeom> collidersToDestroy;
@@ -37,7 +36,7 @@ public class PhysicsEngine {
         world = OdeHelper.createWorld();
         space = OdeHelper.createSimpleSpace();
 
-        bodies = new HashMap<>();
+        bodies = new HashSet<>();
         colliders = new HashMap<>();
         corrections = new HashMap<>();
         
@@ -46,7 +45,6 @@ public class PhysicsEngine {
         world.setDamping(0.005, 0.005);
 
         bodyColliderLinks = new HashMap<>();
-        unlinkedBodies = new HashSet<>();
 
         bodiesToDestroy = new HashSet<>();
         collidersToDestroy = new HashSet<>();
@@ -56,11 +54,18 @@ public class PhysicsEngine {
         return new Vector3f(gravity);
     }
 
-    public void setGravity(double x, double y, double z) {
+    @Override
+    public void setGravity(float x, float y, float z) {
         gravity.set(x, y, z);
         world.setGravity(gravity.x, gravity.y, gravity.z);
     }
 
+    @Override
+    public void setGravity(float[] gravity) {
+        setGravity(gravity[0], gravity[1], gravity[2]);
+    }
+
+    @Override
     public void setGravity(Vector3f gravity) {
         setGravity(gravity.x, gravity.y, gravity.z);
     }
@@ -78,11 +83,21 @@ public class PhysicsEngine {
         }
         collidersToDestroy.clear();
 
-        linkUnlinkedBodies();
-
         // Sync the physics bodies with the game objects
-        for (PhysicsBody body : bodies.values()) {
+        for (PhysicsBody body : bodies) {
+            if (body.isDisabled()) {
+                continue;
+            }
+
             body.syncToGameObject();
+        }
+
+        for (PhysicsCollider collider : colliders.values()) {
+            if (collider.isDisabled()) {
+                continue;
+            }
+
+            collider.syncToGameObject();
         }
 
         // Step the world
@@ -92,8 +107,8 @@ public class PhysicsEngine {
         corrections = Collisions.collideSpace(space);
         
         // Apply positional corrections from collisions
-        for (Map.Entry<Integer, DVector3> entry : corrections.entrySet()) {
-            PhysicsBody physBody = bodies.get(entry.getKey());
+        for (Map.Entry<PhysicsBody, DVector3> entry : corrections.entrySet()) {
+            PhysicsBody physBody = entry.getKey();
             if (physBody == null) {
                 System.out.println("Body not found");
                 continue;
@@ -105,21 +120,17 @@ public class PhysicsEngine {
         corrections.clear();
 
         // Sync the game objects with the physics bodies
-        for (PhysicsBody body : bodies.values()) {
+        for (PhysicsBody body : bodies) {
             body.syncToPhysicsBody();
         }
     }
 
-    public PhysicsBody getBody(int ID) {
-        return bodies.get(ID);
-    }
-
     public void addBody(PhysicsBody body) {
         body.linkToWorld(world);
-        if (body.getColliderID() != -1) {
-            linkBodyAndCollider(body.getID(), body.getColliderID());
+        if (body.getColliderID() != null) {
+            linkBodyAndCollider(body, body.getColliderID());
         }
-        bodies.put(body.getID(), body);
+        bodies.add(body);
     }
 
     public void addCollider(PhysicsCollider collider) {
@@ -130,40 +141,29 @@ public class PhysicsEngine {
         colliders.put(collider.getID(), collider);
     }
 
-    public PhysicsCollider getCollider(int ID) {
-        return colliders.get(ID);
-    }
-
-    public boolean linkBodyAndCollider(int bodyID, int colliderID) {
-        PhysicsBody body = getBody(bodyID);
-        PhysicsCollider collider = getCollider(colliderID);
-        if (body == null || collider == null) {
-            unlinkedBodies.add(bodyID);
+    @Override
+    public boolean linkBodyAndCollider(PhysicsBody body, int colliderID) {
+        PhysicsCollider collider = colliders.get(colliderID);
+        if (collider == null) {
             return false;
         }
-        if (collider.getCollider().getBody() != null) {
-            unlinkedBodies.add(bodyID);
+        return linkBodyAndCollider(body, collider);
+    }
+
+    @Override
+    public boolean linkBodyAndCollider(PhysicsBody body, PhysicsCollider collider) {
+        if (body == null || collider == null) {
             return false;
         }
 
         DGeom geom = collider.getCollider();
         geom.setBody(body.getBody());
-        bodyColliderLinks.put(bodyID, colliderID);
+        bodyColliderLinks.put(body, collider);
         return true;
     }
 
-    public void linkUnlinkedBodies() {
-        Set<Integer> toRemove = new HashSet<>();
-        for (int bodyID : unlinkedBodies) {
-            if (linkBodyAndCollider(bodyID, bodies.get(bodyID).getColliderID())) {
-                toRemove.add(bodyID);
-            }
-        }
-        unlinkedBodies.removeAll(toRemove);
-    }
-
     public List<PhysicsBody> getBodies() {
-        return new ArrayList<>(bodies.values());
+        return new ArrayList<>(bodies);
     }
 
     public List<PhysicsCollider> getColliders() {
@@ -172,12 +172,30 @@ public class PhysicsEngine {
 
     public void removeBody(PhysicsBody body) {
         bodiesToDestroy.add(body.getBody());
-        bodies.remove(body.getID());
-        bodyColliderLinks.remove(body.getID());
+        bodies.remove(body);
+        bodyColliderLinks.remove(body);
     }
 
     public void removeCollider(PhysicsCollider collider) {
         collidersToDestroy.add(collider.getCollider());
         colliders.remove(collider.getID());
+    }
+
+    public void clear() {
+        bodies.clear();
+        colliders.clear();
+        corrections.clear();
+        bodyColliderLinks.clear();
+        bodiesToDestroy.clear();
+        collidersToDestroy.clear();
+
+        world.destroy();
+        space.destroy();
+
+        world = OdeHelper.createWorld();
+        space = OdeHelper.createSimpleSpace();
+
+        world.setGravity(gravity.x, gravity.y, gravity.z);
+        world.setDamping(0.005, 0.005);
     }
 }
