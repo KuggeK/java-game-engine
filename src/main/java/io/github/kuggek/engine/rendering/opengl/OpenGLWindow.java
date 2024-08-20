@@ -77,6 +77,16 @@ public class OpenGLWindow extends JFrame implements Window {
     }
 
     @Override
+    public void removeEventListener(EventListener listener) {
+        if (listener instanceof GLEventListener) {
+            canvas.removeGLEventListener((GLEventListener) listener);
+        } else if (listener instanceof KeyListener) {
+            canvas.removeKeyListener((KeyListener) listener);
+        }
+        listeners.remove(listener);
+    }
+
+    @Override
     public void destroy() {
         for (EventListener listener : listeners) {
             if (listener instanceof GLEventListener) {
@@ -108,5 +118,10 @@ public class OpenGLWindow extends JFrame implements Window {
     @Override
     public KeyInput getKeyInput() {
         return keyInput;
+    }
+
+    @Override
+    public void display() {
+        canvas.display();
     }
 }

@@ -10,9 +10,13 @@ public interface Window {
 
     void registerEventListener(EventListener listener);
 
+    void removeEventListener(EventListener listener);
+
     void destroy();
 
     void toggleFullscreen();
 
     KeyInput getKeyInput();
+
+    void display();
 }

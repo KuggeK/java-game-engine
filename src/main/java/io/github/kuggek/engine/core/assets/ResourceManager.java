@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -46,7 +47,17 @@ public class ResourceManager {
     }
 
     private static String readRegularFile(String path) throws IOException {
-        List<String> lines = Files.readAllLines(Paths.get(path));
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        List<String> lines;
+
+        try {
+            lines = Files.readAllLines(Paths.get(ResourceManager.class.getResource(path).toURI()));
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+            throw new IOException("Failed to read file: " + path, e);
+        }
         return String.join("\n", lines);
     }
 
@@ -75,9 +86,18 @@ public class ResourceManager {
     }
 
     private static String[] listRegularFilesIn(String path) throws IOException {
-        File folder = new File(path);
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        File folder;
+        try {
+            folder = new File(ResourceManager.class.getResource(path).toURI());
+        } catch (URISyntaxException e) {
+            throw new IOException("Failed to list files in directory: " + path, e);
+        }
+
         if (!folder.exists()) {
-            throw new IOException("Directory does not exist");
+            throw new IOException("Directory does not exist: " + path);
         }
         return folder.list();
     }

@@ -3,25 +3,29 @@ package io.github.kuggek.engine.ecs;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashSet;
+import java.util.TreeMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import io.github.kuggek.engine.core.config.EngineProjectConfiguration;
 import io.github.kuggek.engine.core.json.GameSceneAdapters;
+import io.github.kuggek.engine.subsystems.GameSceneSettings;
 
-public class GameScene {
+public class GameScene implements GameSceneSettings {
     private int ID;
 
     private String name;
 
-    private Set<GameObject> gameObjects;
+    private Map<Integer, GameObject> gameObjects;
 
     public GameScene(int ID, String name) {
         this.ID = ID;
         this.name = name;
-        this.gameObjects = new HashSet<>();
+        this.gameObjects = new TreeMap<>();
     }
 
     public int getID() {
@@ -39,16 +43,31 @@ public class GameScene {
     public void setName(String name) {
         this.name = name;
     }
+    
+    /**
+     * Removes a game object and all of its children from the scene
+     * @param ID The ID of the game object to remove
+     * @return True if the game object was removed, false if it was not in the scene
+     */
+    public boolean removeGameObject(Integer ID) {
+        GameObject gameObject = gameObjects.remove(ID);
+        if (gameObject == null) {
+            return false;
+        }
+
+        for (GameObject child : gameObject.getChildren()) {
+            removeGameObject(child);
+        }
+        return true;
+    } 
 
     /**
      * Removes a game object and all of its children from the scene
      * @param gameObject The game object to remove
+     * @return True if the game object was removed, false if it was not in the scene
      */
-    public void removeGameObject(GameObject gameObject) {
-        gameObjects.remove(gameObject);
-        for (GameObject child : gameObject.getChildren()) {
-            removeGameObject(child);
-        }
+    public boolean removeGameObject(GameObject gameObject) {
+        return removeGameObject(gameObject.getID());
     }
 
     /**
@@ -56,7 +75,11 @@ public class GameScene {
      * @param gameObject The game object to add
      */
     public void addGameObject(GameObject gameObject) {
-        gameObjects.add(gameObject);
+        GameObject occupier = gameObjects.putIfAbsent(gameObject.getID(), gameObject);
+        if (occupier != null) {
+            throw new IllegalArgumentException("A game object with the ID " + gameObject.getID() + " already exists in the scene");
+        }
+
         for (GameObject child : gameObject.getChildren()) {
             addGameObject(child);
         }
@@ -67,7 +90,16 @@ public class GameScene {
      * @return A read-only set of all game objects in the scene
      */
     public Set<GameObject> getGameObjects() {
-        return Set.copyOf(gameObjects);
+        return Set.copyOf(gameObjects.values());
+    }
+
+    @Override
+    public GameObject getGameObject(int ID) {
+        return gameObjects.get(ID);
+    }
+
+    public Set<GameObject> getRootLevelGameObjects() {
+        return gameObjects.values().stream().filter(gameObject -> gameObject.getParent() == null).collect(Collectors.toSet());
     }
 
     /**
@@ -80,7 +112,21 @@ public class GameScene {
         GsonBuilder builder = new GsonBuilder();
         GameSceneAdapters.registerAdapters(builder);
         Gson gson = builder.create();
-        String jsonString = Files.readString(Paths.get(sceneName + ".json"));
+        String scenesLocation = EngineProjectConfiguration.get().getPaths().getScenesPath();
+        String jsonString = Files.readString(Paths.get(scenesLocation + sceneName + ".json"));
+        return gson.fromJson(jsonString, GameScene.class);
+    }
+
+    /**
+     * Copies a scene by serializing it to JSON and then deserializing it
+     * @param scene The scene to copy
+     * @return The copied scene
+     */
+    public static GameScene copyScene(GameScene scene) {
+        GsonBuilder builder = new GsonBuilder();
+        GameSceneAdapters.registerAdapters(builder);
+        Gson gson = builder.create();
+        String jsonString = gson.toJson(scene);
         return gson.fromJson(jsonString, GameScene.class);
     }
 }

@@ -69,8 +69,10 @@ public class GameSceneAdapters {
         public JsonElement serialize(GameObject src, Type typeOfSrc, JsonSerializationContext context) {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("ID", src.getID());
+            jsonObject.addProperty("name", src.getName());
             jsonObject.add("transform", context.serialize(src.getTransform()));
             jsonObject.add("tags", context.serialize(src.getTags()));
+            jsonObject.addProperty("disabled", src.isDisabled());
 
             JsonObject componentObject = new JsonObject();
             for (GameComponent component : src.getComponents()) {
@@ -89,10 +91,14 @@ public class GameSceneAdapters {
             JsonObject root = json.getAsJsonObject();
 
             int ID = root.get("ID").getAsInt();
+            String name = root.get("name").getAsString();
             Transform transform = context.deserialize(root.get("transform"), Transform.class);
             Set<String> tags = context.deserialize(root.get("tags"), Set.class);
+            boolean disabled = root.get("disabled").getAsBoolean();
 
             GameObject gameObject = new GameObject(ID);
+            gameObject.setName(name);
+            gameObject.setDisabled(disabled);
 
             for (var entry : root.get("components").getAsJsonObject().entrySet()) {
                 try {
@@ -104,7 +110,8 @@ public class GameSceneAdapters {
 
                    // If the class is not found, it might be a script, which needs to be loaded from the script loader.
                     try {
-                        Script script = ScriptLoader.loadScript(entry.getKey());
+                        Class<?> scriptClass = ScriptLoader.getJarClassLoader().loadClass(entry.getKey());
+                        Script script = (Script) context.deserialize(entry.getValue(), scriptClass);
                         gameObject.addComponent(script, true);
                     } catch (Exception e2) {
                         System.out.println("Could not load script: " + entry.getKey());
@@ -135,7 +142,8 @@ public class GameSceneAdapters {
         public JsonElement serialize(GameScene src, Type typeOfSrc, JsonSerializationContext context) {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("ID", src.getID());
-            jsonObject.add("gameObjects", context.serialize(src.getGameObjects()));
+            jsonObject.addProperty("name", src.getName());
+            jsonObject.add("gameObjects", context.serialize(src.getRootLevelGameObjects()));
             return jsonObject;
         }
 
@@ -144,7 +152,6 @@ public class GameSceneAdapters {
                 throws JsonParseException {
             JsonObject root = json.getAsJsonObject();
             GameScene scene = new GameScene(root.get("ID").getAsInt(), root.get("name").getAsString());
-
             for (JsonElement element : root.get("gameObjects").getAsJsonArray()) {
                 GameObject gameObject = context.deserialize(element, GameObject.class);
                 scene.addGameObject(gameObject);
