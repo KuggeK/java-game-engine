@@ -5,7 +5,10 @@ import org.joml.Matrix4f;
 import io.github.kuggek.engine.core.Transform;
 
 public interface Camera {
-     public Matrix4f getViewMatrix();
+
+    boolean isDisabled();
+
+    public Matrix4f getViewMatrix();
 
     public Matrix4f getProjectionMatrix(float aspectRatio);
 

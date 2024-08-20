@@ -7,6 +7,11 @@ import io.github.kuggek.engine.core.Transform;
 public class EmptyCamera implements Camera {
 
     @Override
+    public boolean isDisabled() {
+        return true;
+    }
+
+    @Override
     public Matrix4f getViewMatrix() {
         return new Matrix4f();
     }

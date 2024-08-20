@@ -8,20 +8,20 @@ import io.github.kuggek.engine.ecs.GameComponent;
 import io.github.kuggek.engine.ecs.GameObject;
 import io.github.kuggek.engine.ecs.components.ComponentField;
 import io.github.kuggek.engine.rendering.objects.Camera;
-import io.github.kuggek.engine.subsystems.SubsystemSettings;
+import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class CameraComponent extends GameComponent implements Camera {
     @ComponentField
-    private float fov;
+    private float fov = 70f;
 
     @ComponentField
-    private float near;
+    private float near = 0.01f;
 
     @ComponentField
-    private float far;
+    private float far = 1000;
 
     @ComponentField
-    private boolean orthographic;
+    private boolean orthographic = false;
 
     @ComponentField
     private boolean activeOnStart = false;
@@ -59,9 +59,9 @@ public class CameraComponent extends GameComponent implements Camera {
     }
 
     @Override
-    protected void onAwake(SubsystemSettings settings) {
+    protected void onAwake(EngineRuntimeSettings settings) {
         if (activeOnStart) {
-            settings.setActiveCamera(this);
+            settings.getRenderingSettings().setActiveCamera(this);
         }
     }
 

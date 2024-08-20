@@ -7,14 +7,10 @@ import org.joml.Matrix4f;
 
 import io.github.kuggek.engine.core.Transform;
 import io.github.kuggek.engine.ecs.GameComponent;
-import io.github.kuggek.engine.ecs.GameObject;
 import io.github.kuggek.engine.ecs.components.ComponentField;
 import io.github.kuggek.engine.rendering.objects.RenderInstance;
 
 public class RenderInstanceComponent extends GameComponent implements RenderInstance {
-      @ComponentField
-    private int ID;
-
     @ComponentField
     private int meshID;
 
@@ -42,10 +38,8 @@ public class RenderInstanceComponent extends GameComponent implements RenderInst
     @ComponentField
     private Map<Integer, Integer> textureParameters;
 
-    public RenderInstanceComponent(int ID, GameObject gameObject) {
-        this.gameObject = gameObject;
-        this.transform = gameObject.getTransform();
-        this.ID = ID;
+    public RenderInstanceComponent() {
+        super();
         this.meshID = -1;
         this.materialID = -1;
         this.texturingEnabled = false;
@@ -55,14 +49,6 @@ public class RenderInstanceComponent extends GameComponent implements RenderInst
         this.lit = true;
         this.castsShadows = true;
         this.textureParameters = new HashMap<>();
-    }
-
-    public int getID() {
-        return ID;
-    }
-
-    public void setID(int ID) {
-        this.ID = ID;
     }
 
     public Matrix4f getModelMatrix() {
