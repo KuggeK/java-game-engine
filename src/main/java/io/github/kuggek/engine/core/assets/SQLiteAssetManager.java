@@ -8,7 +8,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.joml.Vector4f;
 
@@ -21,6 +23,8 @@ public class SQLiteAssetManager implements AssetManager {
     private static SQLiteAssetManager instance;
     private static Connection conn;
 
+    private static Map<String, String> queries;
+
     private SQLiteAssetManager() {
         try {
             conn = DriverManager.getConnection("jdbc:sqlite:assets.db");
@@ -28,14 +32,18 @@ public class SQLiteAssetManager implements AssetManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        queries = new HashMap<>();
     }
 
     private void initTables() { 
         try {
-            String[] tables = ResourceManager.listFilesIn("db/tables/");
+            String folder = "db/tables/";
+            String[] tables = ResourceManager.listFilesIn(folder);
             
             for (String table : tables) {
-                System.out.println(table);
+                if (!table.startsWith(folder)) {
+                    table = folder + table;
+                }
                 String query = ResourceManager.readFile(table);
                 conn.createStatement().execute(query);
             }
@@ -150,24 +158,68 @@ public class SQLiteAssetManager implements AssetManager {
             indicesBuffer.putInt(i);
         }
 
-        statement.setBytes(1, positionsBuffer.array());
-        statement.setBytes(2, textureCoordsBuffer.array());
-        statement.setBytes(3, normalsBuffer.array());
-        statement.setBytes(4, indicesBuffer.array()); 
+        statement.setString(1, mesh.getName());
+        statement.setBytes(2, positionsBuffer.array());
+        statement.setBytes(3, textureCoordsBuffer.array());
+        statement.setBytes(4, normalsBuffer.array());
+        statement.setBytes(5, indicesBuffer.array()); 
         
         if (mesh.getTangents() != null) {
             ByteBuffer tangentsBuffer = ByteBuffer.allocate(mesh.getTangents().length * Float.BYTES);
             for (float f : mesh.getTangents()) {
                 tangentsBuffer.putFloat(f);
             }
-            statement.setBytes(5, tangentsBuffer.array());
+            statement.setBytes(6, tangentsBuffer.array());
         } else {
-            statement.setBytes(5, null);
+            statement.setBytes(6, null);
         }
 
         ResultSet res = statement.executeQuery();
         mesh.setID(res.getInt("id"));
         res.close();
+    }
+
+    @Override
+    public void saveMeshChecked(Mesh mesh) throws Exception {
+        String query = fetchQuery("saveMeshChecked.sql");
+        PreparedStatement statement = conn.prepareStatement(query);
+        
+        ByteBuffer positionsBuffer = ByteBuffer.allocate(mesh.getPositions().length * Float.BYTES);
+        ByteBuffer textureCoordsBuffer = ByteBuffer.allocate(mesh.getTextureCoords().length * Float.BYTES);
+        ByteBuffer normalsBuffer = ByteBuffer.allocate(mesh.getNormals().length * Float.BYTES);
+        ByteBuffer indicesBuffer = ByteBuffer.allocate(mesh.getIndices().length * Integer.BYTES);
+
+        for (float f : mesh.getPositions()) {
+            positionsBuffer.putFloat(f);
+        }
+        for (float f : mesh.getTextureCoords()) {
+            textureCoordsBuffer.putFloat(f);
+        }
+        for (float f : mesh.getNormals()) {
+            normalsBuffer.putFloat(f);
+        }
+        for (int i : mesh.getIndices()) {
+            indicesBuffer.putInt(i);
+        }
+
+        statement.setInt(1, mesh.getID());
+        statement.setString(2, mesh.getName());
+        statement.setBytes(3, positionsBuffer.array());
+        statement.setBytes(4, textureCoordsBuffer.array());
+        statement.setBytes(5, normalsBuffer.array());
+        statement.setBytes(6, indicesBuffer.array()); 
+        
+        if (mesh.getTangents() != null) {
+            ByteBuffer tangentsBuffer = ByteBuffer.allocate(mesh.getTangents().length * Float.BYTES);
+            for (float f : mesh.getTangents()) {
+                tangentsBuffer.putFloat(f);
+            }
+            statement.setBytes(7, tangentsBuffer.array());
+        } else {
+            statement.setBytes(7, null);
+        }
+
+        statement.executeUpdate();
     }
 
     @Override
@@ -184,18 +236,48 @@ public class SQLiteAssetManager implements AssetManager {
         }
 
         statement.setString(1, texture.getFileName());
-        statement.setInt(2, texture.getWidth());
-        statement.setInt(3, texture.getHeight());
-        statement.setBytes(4, dataBuffer.array());
+        statement.setString(2, texture.getName());
+        statement.setInt(3, texture.getWidth());
+        statement.setInt(4, texture.getHeight());
+        statement.setBytes(5, dataBuffer.array());
 
         ResultSet res = statement.executeQuery();
         texture.setID(res.getInt("id"));
         res.close();
     }
 
+    @Override
+    public void saveTextureChecked(Texture texture) throws Exception {
+        String query = fetchQuery("saveTextureChecked.sql");
+        PreparedStatement statement = conn.prepareStatement(query);
+        
+        ByteBuffer dataBuffer = ByteBuffer.allocate(
+            texture.getPixels().length * Integer.BYTES
+        );
+
+        for (int i : texture.getPixels()) {
+            dataBuffer.putInt(i);
+        }
+
+        statement.setInt(1, texture.getID());
+        statement.setString(2, texture.getFileName());
+        statement.setString(3, texture.getName());
+        statement.setInt(4, texture.getWidth());
+        statement.setInt(5, texture.getHeight());
+        statement.setBytes(6, dataBuffer.array());
+
+        statement.executeUpdate();
+    }
+
     private String fetchQuery(String queryName) {
         try {
-            return ResourceManager.readFile("db/queries/" + queryName);
+            if (queries.containsKey(queryName)) {
+                return queries.get(queryName);
+            }
+            
+            String query = ResourceManager.readFile("db/queries/" + queryName);
+            queries.put(queryName, query);
+            return query;
         } catch (IOException e) {
             e.printStackTrace();
             return "";
@@ -205,6 +287,7 @@ public class SQLiteAssetManager implements AssetManager {
     private Texture resultSetToTexture(ResultSet res) throws SQLException {
         int ID = res.getInt("id");
         String fileName = res.getString("file_name");
+        String name = res.getString("name");
         int width = res.getInt("width");
         int height = res.getInt("height");
 
@@ -214,11 +297,15 @@ public class SQLiteAssetManager implements AssetManager {
             pixels[i / 4] = ByteBuffer.wrap(pixelsByte, i, 4).getInt();
         }
      
-        return new Texture(ID, fileName, width, height, pixels);
+        Texture texture = new Texture(ID, fileName, width, height, pixels);
+        texture.setName(name);
+        return texture;
     }
 
     private Mesh resultSetToMesh(ResultSet res) throws SQLException {
         int ID = res.getInt("id");
+
+        String name = res.getString("name");
 
         byte[] positionsByte = res.getBytes("positions");
         float[] positions = new float[positionsByte.length / Float.BYTES];
@@ -254,6 +341,7 @@ public class SQLiteAssetManager implements AssetManager {
         }
 
         Mesh mesh = new Mesh(ID, positions, textureCoords, normals, indices);
+        mesh.setName(name);
         mesh.setTangents(tangents);
         return mesh;
     }
@@ -283,11 +371,11 @@ public class SQLiteAssetManager implements AssetManager {
             indicesBuffer.putInt(i);
         }
 
-        statement.setBytes(1, positionsBuffer.array());
-        statement.setBytes(2, textureCoordsBuffer.array());
-        statement.setBytes(3, normalsBuffer.array());
-        statement.setBytes(4, indicesBuffer.array());
-        statement.setInt(5, ID);
+        statement.setString(1, mesh.getName());
+        statement.setBytes(2, positionsBuffer.array());
+        statement.setBytes(3, textureCoordsBuffer.array());
+        statement.setBytes(4, normalsBuffer.array());
+        statement.setBytes(5, indicesBuffer.array());
         if (mesh.getTangents() != null) {
             ByteBuffer tangentsBuffer = ByteBuffer.allocate(mesh.getTangents().length * Float.BYTES);
             for (float f : mesh.getTangents()) {
@@ -297,6 +385,7 @@ public class SQLiteAssetManager implements AssetManager {
         } else {
             statement.setBytes(6, null);
         }
+        statement.setInt(7, ID);
 
         statement.executeUpdate();
     }
@@ -316,10 +405,13 @@ public class SQLiteAssetManager implements AssetManager {
         }
 
         statement.setString(1, texture.getFileName());
-        statement.setInt(2, texture.getWidth());
-        statement.setInt(3, texture.getHeight());
-        statement.setBytes(4, dataBuffer.array());
-        statement.setInt(5, ID);
+        statement.setString(2, texture.getName());
+        statement.setInt(3, texture.getWidth());
+        statement.setInt(4, texture.getHeight());
+        statement.setBytes(5, dataBuffer.array());
+        statement.setInt(6, ID);
+
+        statement.executeUpdate();
     }
 
     @Override
@@ -327,10 +419,11 @@ public class SQLiteAssetManager implements AssetManager {
         String query = fetchQuery("saveMaterial.sql");
         PreparedStatement statement = conn.prepareStatement(query);
         
-        statement.setBytes(1, vectorToBytes(material.getAmbient()));
-        statement.setBytes(2, vectorToBytes(material.getDiffuse()));
-        statement.setBytes(3, vectorToBytes(material.getSpecular()));
-        statement.setFloat(4, material.getShininess());
+        statement.setString(1, material.getName());
+        statement.setBytes(2, vectorToBytes(material.getAmbient()));
+        statement.setBytes(3, vectorToBytes(material.getDiffuse()));
+        statement.setBytes(4, vectorToBytes(material.getSpecular()));
+        statement.setFloat(5, material.getShininess());
 
         ResultSet res = statement.executeQuery();
         material.setID(res.getInt("id"));
@@ -338,15 +431,31 @@ public class SQLiteAssetManager implements AssetManager {
     }
 
     @Override
+    public void saveMaterialChecked(Material material) throws Exception {
+        String query = fetchQuery("saveMaterialChecked.sql");
+        PreparedStatement statement = conn.prepareStatement(query);
+        
+        statement.setInt(1, material.getID());
+        statement.setString(2, material.getName());
+        statement.setBytes(3, vectorToBytes(material.getAmbient()));
+        statement.setBytes(4, vectorToBytes(material.getDiffuse()));
+        statement.setBytes(5, vectorToBytes(material.getSpecular()));
+        statement.setFloat(6, material.getShininess());
+
+        statement.executeUpdate();
+    }
+
+    @Override
     public void updateMaterial(int ID, Material material) throws Exception {
         String query = fetchQuery("updateMaterial.sql");
         PreparedStatement statement = conn.prepareStatement(query);
         
-        statement.setBytes(1, vectorToBytes(material.getAmbient()));
-        statement.setBytes(2, vectorToBytes(material.getDiffuse()));
-        statement.setBytes(3, vectorToBytes(material.getSpecular()));
-        statement.setFloat(4, material.getShininess());
-        statement.setInt(5, ID);
+        statement.setString(1, material.getName());
+        statement.setBytes(2, vectorToBytes(material.getAmbient()));
+        statement.setBytes(3, vectorToBytes(material.getDiffuse()));
+        statement.setBytes(4, vectorToBytes(material.getSpecular()));
+        statement.setFloat(5, material.getShininess());
+        statement.setInt(6, ID);
 
         statement.executeUpdate();
     }
@@ -382,11 +491,12 @@ public class SQLiteAssetManager implements AssetManager {
 
     private Material resultSetToMaterial(ResultSet res) throws SQLException {
         int ID = res.getInt("id");
+        String name = res.getString("name");
         Vector4f ambient = bytesToVector(res.getBytes("ambient"));
         Vector4f diffuse = bytesToVector(res.getBytes("diffuse"));
         Vector4f specular = bytesToVector(res.getBytes("specular"));
         float shininess = res.getFloat("shininess");
-        return new Material(ID, ambient, diffuse, specular, shininess);
+        return new Material(ID, name, ambient, diffuse, specular, shininess);
     }
 
     @Override
@@ -395,6 +505,21 @@ public class SQLiteAssetManager implements AssetManager {
         PreparedStatement statement = conn.prepareStatement(query);
         statement.setInt(1, ID);
         statement.executeUpdate();
+    }
+
+    public ResultSet fetchAllMeshesRaw() throws SQLException {
+        String query = fetchQuery("fetchAllMeshes.sql");
+        return conn.createStatement().executeQuery(query);
+    }
+
+    public ResultSet fetchAllTexturesRaw() throws SQLException {
+        String query = fetchQuery("fetchAllTextures.sql");
+        return conn.createStatement().executeQuery(query);
+    }
+
+    public ResultSet fetchAllMaterialsRaw() throws SQLException {
+        String query = fetchQuery("fetchAllMaterials.sql");
+        return conn.createStatement().executeQuery(query);
     }
 
     private byte[] vectorToBytes(Vector4f vector) {

@@ -1,6 +1,7 @@
 UPDATE 
     mesh 
 SET 
+    name = ?,
     positions = ?, 
     texture_coordinates = ?, 
     normals = ?, 

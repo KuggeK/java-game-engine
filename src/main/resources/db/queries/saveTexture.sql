@@ -1,1 +1,1 @@
-INSERT INTO texture (file_name, width, height, pixels) VALUES (?, ?, ?, ?) RETURNING id;
+INSERT INTO texture (file_name, name, width, height, pixels) VALUES (?, ?, ?, ?, ?) RETURNING id;

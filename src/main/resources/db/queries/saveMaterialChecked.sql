@@ -1,0 +1,1 @@
+INSERT OR IGNORE INTO material (id, name, ambient, diffuse, specular, shininess) VALUES (?, ?, ?, ?, ?, ?);

@@ -1,1 +1,1 @@
-INSERT INTO material (ambient, diffuse, specular, shininess) VALUES (?, ?, ?, ?) RETURNING id;
+INSERT INTO material (name, ambient, diffuse, specular, shininess) VALUES (?, ?, ?, ?, ?) RETURNING id;

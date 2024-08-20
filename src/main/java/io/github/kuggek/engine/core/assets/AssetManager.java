@@ -18,6 +18,14 @@ public interface AssetManager {
     void saveMesh(Mesh mesh) throws Exception;
 
     /**
+     * Saves a mesh to the asset manager, but checks first if a mesh with the same ID already exists. 
+     * If it does, do not save the mesh.
+     * @param mesh The mesh to save
+     * @throws Exception If the mesh could not be saved
+     */
+    void saveMeshChecked(Mesh mesh) throws Exception;
+
+    /**
      * Fetches a mesh from the asset manager by ID.
      * @param ID The ID of the mesh to fetch
      * @return The mesh
@@ -56,6 +64,14 @@ public interface AssetManager {
     void saveTexture(Texture texture) throws Exception;
 
     /**
+     * Saves a texture to the asset manager, but checks first if a texture with the same ID already exists. 
+     * If it does, do not save the texture.
+     * @param texture The texture to save
+     * @throws Exception If the texture could not be saved
+     */
+    void saveTextureChecked(Texture texture) throws Exception;
+
+    /**
      * Fetches a texture from the asset manager by ID.
      * @param ID The ID of the texture to fetch
      * @return The texture
@@ -92,6 +108,14 @@ public interface AssetManager {
      * @throws Exception If the material could not be saved
      */
     void saveMaterial(Material material) throws Exception;
+
+    /**
+     * Saves a material to the asset manager, but checks first if a material with the same ID already exists. 
+     * If it does, do not save the material.
+     * @param material The material to save
+     * @throws Exception If the material could not be saved
+     */
+    void saveMaterialChecked(Material material) throws Exception;
 
     /**
      * Fetches a material from the asset manager by ID.

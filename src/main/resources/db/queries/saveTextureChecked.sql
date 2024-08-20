@@ -1,0 +1,1 @@
+INSERT OR IGNORE INTO texture (id, file_name, name, width, height, pixels) VALUES (?, ?, ?, ?, ?, ?);

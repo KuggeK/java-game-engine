@@ -1,1 +1,1 @@
-UPDATE material SET ambient = ?, diffuse = ?, specular = ?, shininess = ? WHERE id = ? ;
+UPDATE material SET name = ?, ambient = ?, diffuse = ?, specular = ?, shininess = ? WHERE id = ? ;

@@ -1,1 +1,1 @@
-UPDATE texture SET file_name = ?, width = ?, height = ?, pixels = ? WHERE id = ? ;
+UPDATE texture SET file_name = ?, name = ?, width = ?, height = ?, pixels = ? WHERE id = ? ;
