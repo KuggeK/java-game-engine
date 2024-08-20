@@ -31,10 +31,14 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
 
     private EmptyDirectionalLight emptyDirectionalLight = new EmptyDirectionalLight();
 
-    public BlinnPhongShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile) throws Exception {
+    private final String VERTEX_SHADER_FILE = "basic.vert";
+    private final String FRAGMENT_SHADER_FILE = "basic.frag";
+
+    @Override
+    public void initialize(GL4 gl, GLLocations locations) throws Exception {
         Shader[] shaders = new Shader[] {
-            new Shader(GL_VERTEX_SHADER, vertexShaderFile),
-            new Shader(GL_FRAGMENT_SHADER, fragmentShaderFile)
+            new Shader(GL_VERTEX_SHADER, VERTEX_SHADER_FILE),
+            new Shader(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_FILE)
         };
         this.programID = Shaders.loadShaders(shaders, gl);
     }
@@ -46,7 +50,6 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
 
     @Override
     public void render(GL4 gl, RenderScene scene, GLLocations locations, RenderPassVariables renderVariables) {
-
         List<RenderInstance> instancesToRender = renderVariables.getInstancesToRender().parallelStream().filter(i -> passesCondition(i)).toList();
         if (instancesToRender.isEmpty()) {
             return;
@@ -110,17 +113,6 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
         int previousMaterialID = -1;
         int previousMeshID = -1;
         for (RenderInstance instance : instancesToRender) {
-                    
-            if (previousMaterialID != instance.getMaterialID()) {
-                Material mat = scene.getMaterial(instance.getMaterialID());
-                gl.glUniform4fv(unif(gl, "material.ambient"), 1, mat.getAmbient().get(matrixValueHelper));
-                gl.glUniform4fv(unif(gl, "material.diffuse"), 1, mat.getDiffuse().get(matrixValueHelper));
-                gl.glUniform4fv(unif(gl, "material.specular"), 1, mat.getSpecular().get(matrixValueHelper));
-                gl.glUniform1f(unif(gl, "material.shininess"), mat.getShininess());
-                previousMaterialID = instance.getMaterialID();
-            }
-
-            // If the mesh has changed, bind the new mesh and set the vertex attribute pointers        
             Mesh mesh = scene.getMesh(instance.getMeshID());
 
             // If mesh doesn't exist, skip this instance
@@ -128,6 +120,7 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
                 continue;
             }
 
+            // If the mesh has changed, bind the new mesh and set the vertex attribute pointers        
             if (previousMeshID != instance.getMeshID()) {
                 // Load the mesh into the GPU if it hasn't been loaded yet
                 if (locations.getMeshVertexLoc(mesh.getID()) == -1) {
@@ -145,6 +138,17 @@ public class BlinnPhongShaderProgram implements ShaderProgram {
                 gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, locations.getMeshIndexLoc(mesh.getID()));
                 previousMeshID = mesh.getID();
             }
+
+                                
+            if (previousMaterialID != instance.getMaterialID()) {
+                Material mat = scene.getMaterial(instance.getMaterialID());
+                gl.glUniform4fv(unif(gl, "material.ambient"), 1, mat.getAmbient().get(matrixValueHelper));
+                gl.glUniform4fv(unif(gl, "material.diffuse"), 1, mat.getDiffuse().get(matrixValueHelper));
+                gl.glUniform4fv(unif(gl, "material.specular"), 1, mat.getSpecular().get(matrixValueHelper));
+                gl.glUniform1f(unif(gl, "material.shininess"), mat.getShininess());
+                previousMaterialID = instance.getMaterialID();
+            }
+
 
             Texture texture = null;
             if (instance.isTexturingEnabled()){

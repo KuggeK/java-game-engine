@@ -49,11 +49,9 @@ public class GLLocations {
 
     private int maxNLights = 20;
 
-    public GLLocations(GL4 gl, int textureUnitAmount) {
-        int[] meshVAOs = new int[1];
-        gl.glGenVertexArrays(1, meshVAOs, 0);
-        meshVAO = meshVAOs[0];
+    private boolean resetOnNextFrame = false;
 
+    public GLLocations(int textureUnitAmount) {
         meshVBOs = new HashMap<>();
         meshIndices = new HashMap<>();
         meshTangents = new HashMap<>();
@@ -65,6 +63,13 @@ public class GLLocations {
         }
 
         shadowMapTexture = -1;
+    }
+
+    public void init(GL4 gl) {
+        System.out.println("Initializing OpenGL locations...");
+        int[] meshVAOs = new int[1];
+        gl.glGenVertexArrays(1, meshVAOs, 0);
+        meshVAO = meshVAOs[0];
     }
 
     /**
@@ -163,14 +168,59 @@ public class GLLocations {
         this.shadowMapTexture = shadowMapTexture;
     }
 
+    public void reset(GL4 gl) {
+        clear(gl);
+
+        // Generate new VAO
+        int[] meshVAOs = new int[1];
+        gl.glGenVertexArrays(1, meshVAOs, 0);
+        meshVAO = meshVAOs[0];
+    }
+
+    public void reset() {
+        resetOnNextFrame = true;
+    }
+
+    public void update(GL4 gl) {
+        if (resetOnNextFrame) {
+            reset(gl);
+            resetOnNextFrame = false;
+        }
+    }
+
     /**
-     * Clear all data in the locations. 
+     * Clear all data from the OpenGL context and reset the locations.
      */
-    public void clear() {
-        meshVAO = -1;
-        meshVBOs.clear();
-        meshIndices.clear();
-        textureLocations.clear();
+    private void clear(GL4 gl) {
+        if (meshVAO != -1) {
+            gl.glDeleteVertexArrays(1, new int[] { meshVAO }, 0);
+            meshVAO = -1;
+        }
+
+        if (!meshVBOs.isEmpty()) {
+            int[] meshVBOArray = meshVBOs.values().stream().mapToInt(Integer::intValue).toArray();
+            gl.glDeleteBuffers(meshVBOArray.length, meshVBOArray, 0);
+            meshVBOs.clear();
+        }
+
+        if (!meshIndices.isEmpty()) {
+            int[] meshIndexArray = meshIndices.values().stream().mapToInt(Integer::intValue).toArray();
+            gl.glDeleteBuffers(meshIndexArray.length, meshIndexArray, 0);
+            meshIndices.clear();
+        }
+
+        if (!meshTangents.isEmpty()) {
+            int[] meshTangentArray = meshTangents.values().stream().mapToInt(Integer::intValue).toArray();
+            gl.glDeleteBuffers(meshTangentArray.length, meshTangentArray, 0);
+            meshTangents.clear();
+        }
+
+        if (!textureLocations.isEmpty()) {
+            int[] textureArray = textureLocations.values().stream().mapToInt(Integer::intValue).toArray();
+            gl.glDeleteTextures(textureArray.length, textureArray, 0);
+            textureLocations.clear();
+        }
+
         for (int i = 0; i < activeTextureUnits.length; ++i) {
             activeTextureUnits[i] = -1;
         }

@@ -31,10 +31,14 @@ public class NormalMapShaderProgram implements ShaderProgram {
 
     private EmptyDirectionalLight emptyDirectionalLight = new EmptyDirectionalLight();
 
-    public NormalMapShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile) throws Exception {
+    private final String VERTEX_SHADER_FILE = "normal.vert";
+    private final String FRAGMENT_SHADER_FILE = "normal.frag";
+
+    @Override
+    public void initialize(GL4 gl, GLLocations locations) throws Exception {
         Shader[] shaders = new Shader[] {
-            new Shader(GL4.GL_VERTEX_SHADER, vertexShaderFile),
-            new Shader(GL4.GL_FRAGMENT_SHADER, fragmentShaderFile)
+            new Shader(GL4.GL_VERTEX_SHADER, VERTEX_SHADER_FILE),
+            new Shader(GL4.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_FILE)
         };
         this.programID = Shaders.loadShaders(shaders, gl);
     }

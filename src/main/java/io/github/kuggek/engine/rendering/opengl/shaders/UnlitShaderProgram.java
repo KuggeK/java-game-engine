@@ -30,10 +30,14 @@ public class UnlitShaderProgram implements ShaderProgram {
 
     private FloatBuffer matrixValueHelper = Buffers.newDirectFloatBuffer(16);
 
-    public UnlitShaderProgram(GL4 gl, GLLocations locations, String vertexShaderFile, String fragmentShaderFile) {
+    private final String VERTEX_SHADER_FILE = "unlit.vert";
+    private final String FRAGMENT_SHADER_FILE = "unlit.frag";
+
+    @Override
+    public void initialize(GL4 gl, GLLocations locations) throws Exception {
         Shader[] shaders = new Shader[] {
-            new Shader(GL4.GL_VERTEX_SHADER, vertexShaderFile),
-            new Shader(GL4.GL_FRAGMENT_SHADER, fragmentShaderFile)
+            new Shader(GL4.GL_VERTEX_SHADER, VERTEX_SHADER_FILE),
+            new Shader(GL4.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_FILE)
         };
 
         try {

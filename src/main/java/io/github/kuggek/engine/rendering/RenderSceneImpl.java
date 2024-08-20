@@ -2,9 +2,10 @@ package io.github.kuggek.engine.rendering;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.joml.Matrix4f;
@@ -28,7 +29,7 @@ public class RenderSceneImpl implements RenderScene {
 
     private Map<Integer, Mesh> meshes;
     private Map<Integer, Texture> textures;
-    private Map<Integer, RenderInstance> renderInstances;
+    private Set<RenderInstance> renderInstances;
     private Map<Integer, Material> materials;
     private Camera camera;
     private Matrix4f projectionMatrix;
@@ -48,7 +49,7 @@ public class RenderSceneImpl implements RenderScene {
     public RenderSceneImpl() {
         meshes = new HashMap<>();
         textures = new HashMap<>();
-        renderInstances = new LinkedHashMap<>();
+        renderInstances = new LinkedHashSet<>();
         materials = new HashMap<>();
         projectionMatrix = new Matrix4f();
         globalAmbient = new Vector4f(0.2f, 0.2f, 0.2f, 1.0f);
@@ -63,6 +64,10 @@ public class RenderSceneImpl implements RenderScene {
 
     @Override
     public Mesh getMesh(int meshID) {
+        if (meshID == Mesh.NO_ID) {
+            return null;
+        }
+
         Mesh mesh = meshes.get(meshID);
         if (mesh == null) {
             try {
@@ -82,6 +87,10 @@ public class RenderSceneImpl implements RenderScene {
 
     @Override
     public Texture getTexture(int textureID) {
+        if (textureID == Texture.NO_ID) {
+            return null;
+        }
+
         Texture texture = textures.get(textureID);
         if (texture == null) {
             try {
@@ -101,21 +110,21 @@ public class RenderSceneImpl implements RenderScene {
 
     @Override
     public List<RenderInstance> getRenderInstances() {
-        return List.copyOf(renderInstances.values());
+        return renderInstances.stream().filter(ri -> !ri.isDisabled()).collect(Collectors.toList());
     }
 
     public void addRenderInstance(RenderInstance instance) {
-        renderInstances.put(instance.getID(), instance);
+        renderInstances.add(instance);
     }
 
     public void removeRenderInstance(RenderInstance instance) {
-        renderInstances.remove(instance.getID());
+        renderInstances.remove(instance);
     }
 
     @Override
     public Matrix4f getViewMatrix() {
         if (camera == null) {
-            return new Matrix4f();
+            return null;
         }
         return camera.getViewMatrix();
     }
@@ -127,16 +136,20 @@ public class RenderSceneImpl implements RenderScene {
 
     @Override
     public Matrix4f updateProjectionMatrix(float aspectRatio) {
+        this.aspectRatio = aspectRatio;
         if (camera == null) {
             return new Matrix4f();
         }
         projectionMatrix = camera.getProjectionMatrix(aspectRatio);
-        this.aspectRatio = aspectRatio;
         return projectionMatrix;
     }
 
     @Override
     public Matrix4f getLightSpaceMatrix() {
+        if (camera == null || directionalLight == null) {
+            return new Matrix4f();
+        }
+
         // Calculate the camera frustum
         CameraFrustum camFrustum = CameraFrustum.calculateFrustumCorners(camera, aspectRatio);
 
@@ -278,6 +291,10 @@ public class RenderSceneImpl implements RenderScene {
 
     @Override
     public Material getMaterial(int materialID) {
+        if (materialID == Material.NO_ID) {
+            return Materials.DEFAULT;
+        }
+
         Material material = materials.get(materialID);
         if (material == null) {
             try {
@@ -297,20 +314,17 @@ public class RenderSceneImpl implements RenderScene {
     @Override
     public void sortRenderInstances() {
         // Sort the render instances by mesh, material, and texture
-        renderInstances = renderInstances.entrySet().stream()
+        renderInstances = renderInstances.stream()
             .sorted((a, b) -> {
-                RenderInstance ra = a.getValue();
-                RenderInstance rb = b.getValue();
-                if (ra.getMeshID() != rb.getMeshID()) {
-                    return ra.getMeshID() - rb.getMeshID();
+                if (a.getMeshID() != b.getMeshID()) {
+                    return a.getMeshID() - b.getMeshID();
                 }
-                if (ra.getMaterialID() != rb.getMaterialID()) {
-                    return ra.getMaterialID() - rb.getMaterialID();
+                if (a.getMaterialID() != b.getMaterialID()) {
+                    return a.getMaterialID() - b.getMaterialID();
                 }
-                return ra.getTextureID() - rb.getTextureID();
+                return a.getTextureID() - b.getTextureID();
             })
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new)
-        );
+            .collect(Collectors.toSet());
     }
 
     public void setCamera(Camera camera) {

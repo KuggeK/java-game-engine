@@ -9,6 +9,14 @@ import io.github.kuggek.engine.rendering.opengl.RenderPassVariables;
 public interface ShaderProgram {
 
     /**
+     * Initializes the shader program. This method should be called before the shader program is used.
+     * @param gl The OpenGL context
+     * @param locations The locations of the uniforms in the shader program
+     * @throws Exception If the shader program could not be initialized
+     */
+    void initialize(GL4 gl, GLLocations locations) throws Exception;
+
+    /**
      * Get the program ID of the shader program. This corresponds to the actual OpenGL ID or name 
      * of the shader program.
      * @return

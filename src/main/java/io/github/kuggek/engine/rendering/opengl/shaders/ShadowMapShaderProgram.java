@@ -26,24 +26,22 @@ public class ShadowMapShaderProgram implements ShaderProgram {
 
     private FloatBuffer matrixValueHelper = Buffers.newDirectFloatBuffer(16);
 
-    /**
-     * Create a shadow map shader program with a custom shadow map size.
-     * @param gl The OpenGL context
-     * @param vertexShaderFile The vertex shader file name
-     * @param fragmentShaderFile The fragment shader file name
-     * @param shadowWidth The width of the shadow map
-     * @param shadowHeight The height of the shadow map
-     * @throws Exception If the shader program could not be created
-     */
-    public ShadowMapShaderProgram(GL4 gl, GLLocations locations, String vertexShaderFile, String fragmentShaderFile, int shadowWidth, int shadowHeight) throws Exception {
+    private final String VERTEX_SHADER_FILE = "shadow.vert";
+    private final String FRAGMENT_SHADER_FILE = "shadow.frag";
+
+    public ShadowMapShaderProgram(int width, int height) {
+        this.SHADOW_WIDTH = width;
+        this.SHADOW_HEIGHT = height;
+    }
+
+    @Override
+    public void initialize(GL4 gl, GLLocations locations) throws Exception {
         Shader[] shaders = new Shader[] {
-            new Shader(GL_VERTEX_SHADER, vertexShaderFile),
-            new Shader(GL_FRAGMENT_SHADER, fragmentShaderFile)
+            new Shader(GL_VERTEX_SHADER, VERTEX_SHADER_FILE),
+            new Shader(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_FILE)
         };
 
         this.programID = Shaders.loadShaders(shaders, gl);
-        SHADOW_WIDTH = shadowWidth;
-        SHADOW_HEIGHT = shadowHeight;
 
         // Create the shadow FBO
         int[] FBOs = new int[1];
@@ -78,17 +76,6 @@ public class ShadowMapShaderProgram implements ShaderProgram {
         }
 
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    /**
-     * Create a shadow map shader program with a default shadow map size of 1024x1024.
-     * @param gl The OpenGL context
-     * @param vertexShaderFile The vertex shader file name
-     * @param fragmentShaderFile The fragment shader file name
-     * @throws Exception If the shader program could not be created
-     */
-    public ShadowMapShaderProgram(GL4 gl, GLLocations locations, String vertexShaderFile, String fragmentShaderFile) throws Exception {
-        this(gl, locations, vertexShaderFile, fragmentShaderFile, 1024, 1024);
     }
 
     @Override

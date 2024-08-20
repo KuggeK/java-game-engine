@@ -17,6 +17,9 @@ import io.github.kuggek.engine.rendering.opengl.shaders.Shaders.Shader;
 
 public class SkyBoxShaderProgram implements ShaderProgram {
 
+    private SkyBox skybox;
+    private boolean skyboxChanged = false;
+
     // VBO for the skyboxes vertices
     private int VBO;
     private int VAO;
@@ -26,18 +29,22 @@ public class SkyBoxShaderProgram implements ShaderProgram {
     private FloatBuffer mxValueBuffer = Buffers.newDirectFloatBuffer(16);
     private Matrix4f viewMxHelper = new Matrix4f();
 
+    private final String VERTEX_SHADER_FILE = "skybox.vert";
+    private final String FRAGMENT_SHADER_FILE = "skybox.frag";
+
     /**
      * Create a new skybox shader program.
-     * @param gl The OpenGL context
-     * @param vertexShaderFile The vertex shader file name. 
-     * @param fragmentShaderFile The fragment shader file. 
-     * @param skybox The skybox to render.
-     * @throws Exception If the shader program could not be created.
+     * @param skybox The skybox to render
      */
-    public SkyBoxShaderProgram(GL4 gl, String vertexShaderFile, String fragmentShaderFile, SkyBox skybox) throws Exception {
+    public SkyBoxShaderProgram(SkyBox skybox) {
+        this.skybox = skybox;
+    }
+
+    @Override
+    public void initialize(GL4 gl, GLLocations locations) throws Exception {
         Shader[] shaders = new Shader[] {
-            new Shader(GL_VERTEX_SHADER, vertexShaderFile),
-            new Shader(GL_FRAGMENT_SHADER, fragmentShaderFile)
+            new Shader(GL_VERTEX_SHADER, VERTEX_SHADER_FILE),
+            new Shader(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_FILE)
         };
         this.programID = Shaders.loadShaders(shaders, gl);
 
@@ -71,7 +78,6 @@ public class SkyBoxShaderProgram implements ShaderProgram {
         gl.glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapID);
 
         gl.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, skybox.getTextureSize(), skybox.getTextureSize());
-  
 
         // Load the skybox textures
         for (int i = 0; i < 6; ++i) {
@@ -93,6 +99,11 @@ public class SkyBoxShaderProgram implements ShaderProgram {
         gl.glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     }
 
+    public void setSkybox(SkyBox skybox) {
+        this.skybox = skybox;
+        skyboxChanged = true;
+    }
+
     @Override
     public int getProgramID() {
         return programID;
@@ -100,6 +111,19 @@ public class SkyBoxShaderProgram implements ShaderProgram {
 
     @Override
     public void render(GL4 gl, RenderScene scene, GLLocations locations, RenderPassVariables renderVariables) {
+        if (skyboxChanged) {
+            // Load the skybox textures
+            for (int i = 0; i < 6; ++i) {
+                gl.glTexSubImage2D(
+                    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                    0, 0, 0, 
+                    skybox.getTextureSize(), skybox.getTextureSize(), 
+                    GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, 
+                    Buffers.newDirectIntBuffer(skybox.getTexture(i).getPixels()));
+            }
+            skyboxChanged = false;
+        }
+        
         gl.glDepthMask(false);  
 
         gl.glUseProgram(programID);
