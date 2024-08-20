@@ -17,6 +17,9 @@ You can use the engine in your own project easily with Maven by setting this dep
 ```
 When using the Maven exec plugin to run the program (with `mvn exec:java` from the command line in the project directory), you need to set the MAVEN_OPTS environment variable to "--add-exports java.base/java.lang=ALL-UNNAMED --add-exports java.desktop/sun.awt=ALL-UNNAMED --add-exports java.desktop/sun.java2d=ALL-UNNAMED". If you are running the engine jar, you need to set these same variables on the command line (java --add-exports java.base/java.lang=ALL-UNNAMED --add-exports java.desktop/sun.awt=ALL-UNNAMED --add-exports java.desktop/sun.java2d=ALL-UNNAMED -jar engine-1.0.jar). This is a problem with the JOGL library. A discussion about this can be found [HERE](https://jogamp.org/bugzilla/show_bug.cgi?id=1317). This also applies when using the engine as a library.
 
+### The editor
+Using my [desktop editor](https://github.com/KuggeK/java-game-engine-editor) is the recommended way to use this game engine. Instructions for this approach are found in the editor repository.
+
 ## Prominent third party libraries
 ### JOGL
 I am using JOGL (Java Binding for the OpenGL API) for rendering. I am also using some of their support functionalities for windowing and vector math.
@@ -26,3 +29,6 @@ For the physics simulation I am using ode4j (Java port of Open Dynamics Engine).
 
 ### SQLite JDBC Driver
 For the game engine's asset database I am using SQLite and the Java driver for creating and connecting to it.
+
+### Gson
+Google's JSON library Gson is used for serializing and deserializing project and scene data.
