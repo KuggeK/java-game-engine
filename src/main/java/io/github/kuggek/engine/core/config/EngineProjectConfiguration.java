@@ -20,37 +20,25 @@ public class EngineProjectConfiguration extends WindowSettings {
     private List<String> scenes;
     private String initialSceneName;
 
-    private String scenesPath;
-    private String meshesPath;
-    private String texturesPath;
-    private String shadersPath;
-    private String scriptsPath;
+    private ProjectPaths paths;
 
     private static EngineProjectConfiguration instance;
     
     private EngineProjectConfiguration(int width, int height, String title, boolean fullscreen, boolean resizable, int targetFPS) {
         super(width, height, title, fullscreen, resizable, targetFPS);
+        paths = new ProjectPaths();
     }
 
     public static EngineProjectConfiguration loadProjectConfiguration(String path) throws IOException, URISyntaxException {
         String json = Files.readString(Paths.get(path));
         Gson gson = new Gson();
         instance = gson.fromJson(json, EngineProjectConfiguration.class);
-        populateGlobalPaths(instance);
+        instance.paths = new ProjectPaths();
         return instance;
     }
 
-    public static EngineProjectConfiguration getProjectConfiguration() {
+    public static EngineProjectConfiguration get() {
         return instance;
-    }
-
-    
-    public static void populateGlobalPaths(EngineProjectConfiguration config) {
-        ProjectPaths.setScenesPath(config.getScenesPath());
-        ProjectPaths.setMeshesPath(config.getMeshesPath());
-        ProjectPaths.setTexturesPath(config.getTexturesPath());
-        ProjectPaths.setShadersPath(config.getShadersPath());
-        ProjectPaths.setScriptsPath(config.getScriptsPath());
     }
 
     public String getProjectName() {
@@ -101,43 +89,7 @@ public class EngineProjectConfiguration extends WindowSettings {
         this.initialSceneName = initialSceneName;
     }
 
-    public String getScenesPath() {
-        return scenesPath;
-    }
-
-    public void setScenesPath(String scenesPath) {
-        this.scenesPath = scenesPath;
-    }
-
-    public String getMeshesPath() {
-        return meshesPath;
-    }
-
-    public void setMeshesPath(String meshesPath) {
-        this.meshesPath = meshesPath;
-    }
-
-    public String getTexturesPath() {
-        return texturesPath;
-    }
-
-    public void setTexturesPath(String texturesPath) {
-        this.texturesPath = texturesPath;
-    }
-
-    public String getShadersPath() {
-        return shadersPath;
-    }
-
-    public void setShadersPath(String shadersPath) {
-        this.shadersPath = shadersPath;
-    }
-
-    public String getScriptsPath() {
-        return scriptsPath;
-    }
-
-    public void setScriptsPath(String scriptsPath) {
-        this.scriptsPath = scriptsPath;
+    public ProjectPaths getPaths() {
+        return paths;
     }
 }

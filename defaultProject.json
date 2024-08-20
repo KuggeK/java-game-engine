@@ -16,9 +16,9 @@
     ],
     "initialSceneName": "test-scene",
 
-    "scenesPath": "scenes/",
-    "meshesPath": "assets/meshes/",
-    "texturesPath": "assets/textures/",
-    "shadersPath": "shaders",
-    "scriptsPath": "assets/scripts/"
+    "paths": {
+        "scenesPath": "scenes/",
+        "scriptsPath": "assets/scripts/",
+        "scriptDependenciesPath": "assets/scripts/.dependencies/"
+    }
 }
