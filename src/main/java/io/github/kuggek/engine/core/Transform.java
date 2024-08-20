@@ -147,15 +147,15 @@ public class Transform {
     }
 
     public Vector3f getPosition() {
-        return position;
+        return new Vector3f(position);
     }
 
     public Quaternionf getRotation() {
-        return rotation;
+        return new Quaternionf(rotation);
     }
 
     public Vector3f getScale() {
-        return scale;
+        return new Vector3f(scale);
     }
 
     public void lookAt(Vector3f target) {
