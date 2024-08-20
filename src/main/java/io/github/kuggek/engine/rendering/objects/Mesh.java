@@ -6,8 +6,12 @@ import io.github.kuggek.engine.rendering.objects.defaults.Materials;
  * Represents a 3D mesh. Contains vertex attributes and indices.
  */
 public class Mesh {
+    public static final int NO_ID = -1;
+
     // Unique identifier    
     private int ID;
+
+    private String name;
 
     // Vertex attributes
     private float[] positions;
@@ -44,6 +48,7 @@ public class Mesh {
             throw new IllegalArgumentException("Texture coordinates must be defined for each vertex!");
         }
         this.ID = ID;
+        this.name = "Mesh" + ID;
         this.positions = positions;
         this.textureCoords = textureCoords;
         this.normals = normals;
@@ -74,6 +79,14 @@ public class Mesh {
 
     public void setID(int ID) {
         this.ID = ID;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public int getNumVertices() {

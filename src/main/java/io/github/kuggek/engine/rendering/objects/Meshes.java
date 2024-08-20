@@ -9,22 +9,25 @@ import de.javagl.obj.Obj;
 import de.javagl.obj.ObjData;
 import de.javagl.obj.ObjReader;
 import de.javagl.obj.ObjUtils;
-import io.github.kuggek.engine.core.config.ProjectPaths;
 
 public class Meshes {
+
+    public static Mesh loadMesh(String fileName) throws IOException, URISyntaxException {
+        return loadMesh(new File(fileName));
+    }
 
     /**
      * Loads a mesh from a file in the resources/models directory. The file must be in the .obj format.
      * The returned mesh only contains the vertex attributes and indices. The id of the mesh
      * is set to -1 and needs to be set to a unique value by the caller before use.
      * 
-     * @param fileName The name of the file to load the mesh from
+     * @param file The file to load the mesh from
      * @return The mesh
      * @throws IOException If an IO error occurs either while opening or reading the file
      * @throws URISyntaxException If a URI error occurs, likely the file name is invalid
      */
-    public static Mesh loadMesh(String fileName) throws IOException, URISyntaxException {
-        FileInputStream is = new FileInputStream(new File(ProjectPaths.getMeshPath(fileName)));
+    public static Mesh loadMesh(File file) throws IOException, URISyntaxException {
+        FileInputStream is = new FileInputStream(file);
         Obj obj = ObjReader.read(is);
 
         obj = ObjUtils.convertToRenderable(obj);
@@ -35,7 +38,7 @@ public class Meshes {
         int[] indices = ObjData.getFaceVertexIndicesArray(obj);
 
         Mesh mesh = new Mesh(-1, positions, texCoords, normals, indices);
-        mesh.setFileName(fileName);
+        mesh.setFileName(file.getName());
         return mesh;
     }
 

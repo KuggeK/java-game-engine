@@ -11,7 +11,7 @@ import io.github.kuggek.engine.core.Transform;
  */
 public interface RenderInstance {
 
-  int getID();
+    boolean isDisabled();
 
     Matrix4f getModelMatrix();
 

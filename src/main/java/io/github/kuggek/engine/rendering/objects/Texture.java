@@ -6,12 +6,12 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import io.github.kuggek.engine.core.config.ProjectPaths;
-
 public class Texture {
+    public static final int NO_ID = -1;
     
     private int ID;
     private String fileName;
+    private String name;
 
     private int width;
     private int height;
@@ -20,6 +20,7 @@ public class Texture {
     public Texture(int ID, String fileName, int width, int height, int[] pixels) {
         this.ID = ID;
         this.fileName = fileName;
+        this.name = "Texture" + ID;
         this.width = width;
         this.height = height;
         this.pixels = pixels;
@@ -35,6 +36,10 @@ public class Texture {
 
     public String getFileName() {
         return fileName;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public int getWidth() {
@@ -57,6 +62,10 @@ public class Texture {
         this.fileName = fileName;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public void setPixels(int[] pixels) {
         this.pixels = pixels;
     }
@@ -69,14 +78,30 @@ public class Texture {
         this.height = height;
     }
 
+    /**
+     * Loads a texture from the given file name.
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
     public static Texture loadTexture(String fileName) throws IOException {
-        BufferedImage image = ImageIO.read(new File(ProjectPaths.getTexturePath(fileName)));
+        return loadTexture(new File(fileName));
+    }
+
+    /**
+     * Loads a texture from the given file.
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static Texture loadTexture(File file) throws IOException {
+        BufferedImage image = ImageIO.read(file);
         int width = image.getWidth();
         int height = image.getHeight();
         int[] pixels = new int[width * height];
         image.getRGB(0, 0, width, height, pixels, 0, width);
         Texture texture = new Texture(width, height, pixels);
-        texture.setFileName(fileName);
+        texture.setFileName(file.getName());
         return texture;
     }
 }

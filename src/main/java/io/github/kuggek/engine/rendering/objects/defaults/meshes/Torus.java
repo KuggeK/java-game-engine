@@ -65,6 +65,8 @@ public class Torus extends Mesh {
                 }
             }
         }
-        return new Torus(id, vertices, textureCoords, normals, indices);
+        Torus torus = new Torus(id, vertices, textureCoords, normals, indices);
+        torus.setName("Torus");
+        return torus;
     }
 }

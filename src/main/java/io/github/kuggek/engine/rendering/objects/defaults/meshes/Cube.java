@@ -186,6 +186,7 @@ public class Cube extends Mesh {
     public Cube(int id, Material material) {
         super(id, POSITIONS, TEXTURE_COORDINATES, NORMALS, INDICES, material);
         setTangents(TANGENTS);
+        setName("Cube");
     }
 
     public Cube(int id) {

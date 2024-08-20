@@ -60,7 +60,9 @@ public class Sphere extends Mesh {
             }
         }
         
-        return new Sphere(id, positions, textureCoords, positions, indices);
+        Sphere sphere = new Sphere(id, positions, textureCoords, positions, indices);
+        sphere.setName("Sphere");
+        return sphere;
     }
 
     // Vertices are the same as normals in a sphere. This means we don't need to keep track of normal separately
