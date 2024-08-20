@@ -1,31 +1,32 @@
 package io.github.kuggek.engine.subsystems;
 
-import org.joml.Vector3f;
-import org.joml.Vector4f;
-
 import io.github.kuggek.engine.ecs.GameComponent;
+import io.github.kuggek.engine.ecs.GameObject;
+import io.github.kuggek.engine.ecs.GameObjectManager;
+import io.github.kuggek.engine.ecs.GameScene;
 import io.github.kuggek.engine.physics.PhysicsBody;
 import io.github.kuggek.engine.physics.PhysicsCollider;
 import io.github.kuggek.engine.physics.PhysicsEngine;
+import io.github.kuggek.engine.physics.PhysicsSettings;
 import io.github.kuggek.engine.rendering.RenderingEngine;
-import io.github.kuggek.engine.rendering.objects.Camera;
+import io.github.kuggek.engine.rendering.RenderingSettings;
 import io.github.kuggek.engine.rendering.objects.RenderInstance;
-import io.github.kuggek.engine.rendering.objects.SkyBox;
-import io.github.kuggek.engine.rendering.objects.lights.DirectionalLight;
 import io.github.kuggek.engine.rendering.objects.lights.PositionalLight;
 import io.github.kuggek.engine.scripting.KeyInput;
 import io.github.kuggek.engine.scripting.Script;
 import io.github.kuggek.engine.scripting.ScriptingEngine;
 
 /**
- * Handles the engine subsystems that are used to update the engine. Provides an interface
+ * Handles the engine that are used to update the engine. Provides an interface
  * to handle subsystem settings.
  */
-public class EngineSubsystems implements SubsystemSettings {
+public class EngineSubsystems implements EngineRuntimeSettings, GameObjectManager {
 
     private RenderingEngine renderingEngine;
     private PhysicsEngine physicsEngine;
     private ScriptingEngine scriptingEngine;
+
+    private GameScene scene;
 
     public EngineSubsystems(KeyInput keyInput) {
         renderingEngine = new RenderingEngine();
@@ -34,7 +35,7 @@ public class EngineSubsystems implements SubsystemSettings {
     }
 
     /**
-     * Updates the engine subsystems returning the time it took to update in nanoseconds
+     * Updates the engine returning the time it took to update in nanoseconds
      * @param dt the time since the last update
      * @return the time it took to update in nanoseconds
      */
@@ -44,56 +45,6 @@ public class EngineSubsystems implements SubsystemSettings {
         physicsEngine.updateSimulation(1 / 60.0);
         scriptingEngine.updateScripts(dt, this);
         return System.nanoTime() - start;
-    }
-
-    @Override
-    public void setGravity(float x, float y, float z) {
-        physicsEngine.setGravity(x, y, z);
-    }
-
-    @Override
-    public void setGravity(float[] gravity) {
-        physicsEngine.setGravity(gravity[0], gravity[1], gravity[2]);
-    }
-
-    @Override
-    public void setGravity(Vector3f gravity) {
-        physicsEngine.setGravity(gravity);
-    }
-
-    @Override
-    public void setActiveCamera(Camera camera) {
-        renderingEngine.getScene().setCamera(camera);
-    }
-
-    @Override
-    public Camera getActiveCamera() {
-        return renderingEngine.getScene().getCamera();
-    }
-
-    @Override
-    public void setGlobalAmbient(Vector4f color) {
-        renderingEngine.getScene().setGlobalAmbient(color);
-    }
-
-    @Override
-    public void setGlobalAmbient(float r, float g, float b, float a) {
-        renderingEngine.getScene().setGlobalAmbient(new Vector4f(r, g, b, a));
-    }
-
-    @Override
-    public void setSkyBox(SkyBox skyBox) {
-        renderingEngine.getScene().setSkyBox(skyBox);
-    }
-
-    @Override
-    public void setDirectionalLight(DirectionalLight light) {
-        renderingEngine.getScene().setDirectionalLight(light);
-    }
-
-    @Override
-    public DirectionalLight getDirectionalLight() {
-        return renderingEngine.getScene().getDirectionalLight();
     }
     
     public RenderingEngine getRenderingEngine() {
@@ -108,7 +59,62 @@ public class EngineSubsystems implements SubsystemSettings {
         return scriptingEngine;
     }
 
-    public void removeComponent(GameComponent component) {
+    @Override
+    public RenderingSettings getRenderingSettings() {
+        return renderingEngine;
+    }
+
+    @Override
+    public PhysicsSettings getPhysicsSettings() {
+        return physicsEngine;
+    }
+
+    @Override
+    public GameSceneSettings getGameSceneSettings() {
+        return scene;
+    }
+    
+    public void setupScene(GameScene scene) {
+        clearSubsystems();
+        this.scene = scene;
+        
+        for (GameObject gameObject : scene.getGameObjects()) {
+            gameObject.setManager(this);
+            addGOComponents(gameObject, false);
+        }
+
+        for (GameObject gameObject : scene.getGameObjects()) {
+            for (GameComponent component : gameObject.getComponents()) {
+                GameComponent.awake(component, this);
+            }
+        }
+    }
+
+    private void addGOComponents(GameObject gameObject, boolean awake) {
+        for (GameComponent component : gameObject.getComponents()) {
+            createComponent(component, awake);
+        }
+    }
+
+    @Override
+    public void addGameObject(GameObject gameObject) {
+        addGameObject(gameObject, true);
+    }
+
+    public void addGameObject(GameObject gameObject, boolean awake) {
+        gameObject.setManager(this);
+        scene.addGameObject(gameObject);
+
+        addGOComponents(gameObject, awake);
+    }
+
+    @Override
+    public void removeGameObject(GameObject gameObject) {
+        scene.removeGameObject(gameObject);
+    }
+
+    @Override
+    public void disposeComponent(GameComponent component) {
         if (component instanceof Script) {
             scriptingEngine.setForRemoval((Script) component);
         }
@@ -126,8 +132,13 @@ public class EngineSubsystems implements SubsystemSettings {
         }
         GameComponent.dispose(component, this);
     }
+    
+    @Override
+    public GameComponent createComponent(GameComponent component) {
+        return createComponent(component, true);
+    }
 
-    public GameComponent addComponent(GameComponent component) {
+    public GameComponent createComponent(GameComponent component, boolean awake) {
         if (component instanceof Script) {
             scriptingEngine.setToBeAdded((Script) component);
         }
@@ -143,7 +154,19 @@ public class EngineSubsystems implements SubsystemSettings {
         else if (component instanceof PositionalLight) {
             renderingEngine.getScene().addPositionalLight((PositionalLight) component);
         }
-        GameComponent.awake(component, this);
+        if (awake) {
+            GameComponent.awake(component, this);
+        }
         return component;
+    }
+
+    public void clearSubsystems() {
+        scriptingEngine.clear();
+        physicsEngine.clear();
+        renderingEngine.clear();
+    }
+
+    public GameScene getScene() {
+        return scene;
     }
 }

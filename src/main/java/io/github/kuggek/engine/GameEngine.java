@@ -1,24 +1,21 @@
 package io.github.kuggek.engine;
 
-import static java.awt.event.KeyEvent.VK_ESCAPE;
-
 import java.io.IOException;
 
+import io.github.kuggek.engine.core.assets.DefaultAssets;
+import io.github.kuggek.engine.core.assets.SQLiteAssetManager;
 import io.github.kuggek.engine.core.config.EngineProjectConfiguration;
-import io.github.kuggek.engine.core.config.ProjectPaths;
-import io.github.kuggek.engine.ecs.GameComponent;
-import io.github.kuggek.engine.ecs.GameObject;
-import io.github.kuggek.engine.ecs.GameObjectManager;
 import io.github.kuggek.engine.ecs.GameScene;
 import io.github.kuggek.engine.rendering.Window;
+import io.github.kuggek.engine.rendering.objects.SkyBox;
+import io.github.kuggek.engine.rendering.objects.Texture;
 import io.github.kuggek.engine.rendering.opengl.OpenGLWindow;
 import io.github.kuggek.engine.scripting.ScriptLoader;
 import io.github.kuggek.engine.subsystems.EngineSubsystems;
 
-public class GameEngine implements GameObjectManager {
+public class GameEngine {
     private EngineSubsystems subsystems;
     private Window window;
-    private GameScene currentScene;
     private EngineProjectConfiguration projectConfig;
 
     // Game loop timing variables
@@ -36,14 +33,25 @@ public class GameEngine implements GameObjectManager {
             throw new IllegalArgumentException("No project path provided.");
         }
 
-        ScriptLoader.compileAndPackageScripts("scripts.jar", ProjectPaths.getScriptsPath());
+        EngineProjectConfiguration config = EngineProjectConfiguration.loadProjectConfiguration(args[0]);
+        ScriptLoader.compileAndPackageScripts("scripts.jar", config.getPaths().getScriptsPath());
         ScriptLoader.addJarToClasspath("scripts.jar");
 
+        DefaultAssets.loadDefaultAssets(SQLiteAssetManager.getInstance());
+
         GameEngine engine = new GameEngine();
-        String projectPath = args[0];
-        EngineProjectConfiguration config = EngineProjectConfiguration.loadProjectConfiguration(projectPath);
         engine.initialize(config);
         engine.startGameLoop();
+
+        engine.getSubsystems().getRenderingEngine().setSkyBox(SkyBox.unwrapSkyboxTexture(Texture.loadTexture("assets/textures/skybox2.png")));
+    }
+
+    public void initialize(EngineProjectConfiguration config) throws IOException {
+        initialize(config, new OpenGLWindow(config));
+    }
+
+    public void initialize(EngineProjectConfiguration config, GameScene scene) {
+        initialize(config, new OpenGLWindow(config), scene);
     }
 
     /**
@@ -51,36 +59,37 @@ public class GameEngine implements GameObjectManager {
      * @param config The configuration for the engine.
      * @throws IOException If the initial scene cannot be loaded.
      */
-    public void initialize(EngineProjectConfiguration config) throws IOException {
-        window = new OpenGLWindow(config);
+    public void initialize(EngineProjectConfiguration config, Window suppliedWindow) throws IOException {
+        initialize(config, suppliedWindow, GameScene.loadScene(config.getInitialSceneName()));
+    }
+
+    public void initialize(EngineProjectConfiguration config, Window suppliedWindow, GameScene scene) {
+        window = suppliedWindow;
+        window.setWindowSettings(config);
+
         subsystems = new EngineSubsystems(window.getKeyInput());
 
         subsystems.getRenderingEngine().linkToWindow(window);
+        subsystems.getRenderingEngine().render();
 
         projectConfig = config;
 
         targetFPS = projectConfig.getTargetFPS();
 
-        currentScene = GameScene.loadScene(projectConfig.getInitialSceneName());
-
-        // Populate subsystems with the scene components
-        System.out.println(currentScene.getGameObjects().size());
-        currentScene.getGameObjects().forEach(gameObject -> {
-            gameObject.setManager(this);
-            for (GameComponent component : gameObject.getComponents()) {
-                createComponent(component);
-            }
-        });
+        setupScene(scene);
     }
 
     /**
      * Starts the game engine. This will start the game loop and run the game until the window is closed.
      * {@link #initialize(EngineProjectConfiguration)} must be called before this method.
-     * @throws Exception
      */
-    public void startGameLoop() throws Exception {
+    public void startGameLoop() {
         if (gameLoopThread != null && gameLoopThread.isAlive()) {
-            gameLoopThread.join();
+            try {
+                gameLoopThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         gameLoopThread = new Thread(() -> {
@@ -92,10 +101,6 @@ public class GameEngine implements GameObjectManager {
                 currentTime = System.currentTimeMillis();
                 deltaTime = currentTime - previousTime;
                 previousTime = currentTime;
-    
-                if (window.getKeyInput().isKeyPressed(VK_ESCAPE)) {
-                    destroy();
-                }
 
                 // Update the engine subsystems. Time taken is in nanoseconds.
                 timeTaken = subsystems.update(deltaTime / 1000.0f);
@@ -145,28 +150,21 @@ public class GameEngine implements GameObjectManager {
         window.destroy();
     }
 
-    @Override
-    public GameComponent createComponent(GameComponent component) {
-        return subsystems.addComponent(component);
-    }
-
-    @Override
-    public void disposeComponent(GameComponent component) {
-        subsystems.removeComponent(component);
-    }
-
-    @Override
-    public void addGameObject(GameObject gameObject) {
-        gameObject.setManager(this);
-        currentScene.addGameObject(gameObject);
-
-        for (GameComponent component : gameObject.getComponents()) {
-            createComponent(component);
+    public void setupScene(GameScene newScene) {
+        if (gameLoopThread != null && gameLoopThread.isAlive()) {
+            stopGameLoop();
+            try {
+                gameLoopThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
+        subsystems.setupScene(newScene);
     }
 
-    @Override
-    public void removeGameObject(GameObject gameObject) {
-        currentScene.removeGameObject(gameObject);
+    public GameScene getCurrentScene() {
+        return subsystems.getScene();
     }
+
 }

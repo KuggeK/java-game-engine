@@ -1,4 +1,4 @@
-package io.github.kuggek.engine.subsystems;
+package io.github.kuggek.engine.rendering;
 
 import org.joml.Vector4f;
 
