@@ -24,7 +24,7 @@ public class EngineProjectConfiguration extends WindowSettings {
 
     private static EngineProjectConfiguration instance;
     
-    private EngineProjectConfiguration(int width, int height, String title, boolean fullscreen, boolean resizable, int targetFPS) {
+    public EngineProjectConfiguration(int width, int height, String title, boolean fullscreen, boolean resizable, int targetFPS) {
         super(width, height, title, fullscreen, resizable, targetFPS);
         paths = new ProjectPaths();
     }
@@ -35,6 +35,10 @@ public class EngineProjectConfiguration extends WindowSettings {
         instance = gson.fromJson(json, EngineProjectConfiguration.class);
         instance.paths = new ProjectPaths();
         return instance;
+    }
+
+    public static void set(EngineProjectConfiguration config) {
+        instance = config;
     }
 
     public static EngineProjectConfiguration get() {
