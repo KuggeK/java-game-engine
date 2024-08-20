@@ -11,6 +11,11 @@ public class EmptyDirectionalLight implements DirectionalLight {
     private static final float[] direction = new float[] {0.0f, 0.0f, 0.0f};
 
     @Override
+    public boolean isDisabled() {
+        return true;
+    }
+
+    @Override
     public Vector4f getAmbient() {
         return new Vector4f(ambient);
     }

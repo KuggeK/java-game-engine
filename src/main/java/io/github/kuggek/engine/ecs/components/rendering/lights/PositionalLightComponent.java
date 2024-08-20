@@ -19,6 +19,14 @@ public class PositionalLightComponent extends LightComponent implements Position
     @ComponentField
     private float radius;
 
+    public PositionalLightComponent() {
+        super();
+        constant = 1.0f;
+        linear = 0.09f;
+        quadratic = 0.032f;
+        radius = 10.0f;
+    }
+
     public PositionalLightComponent(float[] ambient, float[] diffuse, float[] specular) {
         super(ambient, diffuse, specular);
         constant = 1.0f;

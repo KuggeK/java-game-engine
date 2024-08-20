@@ -4,7 +4,7 @@ import org.joml.Vector3f;
 
 import io.github.kuggek.engine.ecs.components.ComponentField;
 import io.github.kuggek.engine.rendering.objects.lights.DirectionalLight;
-import io.github.kuggek.engine.subsystems.SubsystemSettings;
+import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 public class DirectionalLightComponent extends LightComponent implements DirectionalLight {
 
@@ -25,9 +25,9 @@ public class DirectionalLightComponent extends LightComponent implements Directi
     }
 
     @Override
-    protected void onAwake(SubsystemSettings settings) {
+    protected void onAwake(EngineRuntimeSettings settings) {
         if (activeOnStart) {
-            settings.setDirectionalLight(this);
+            settings.getRenderingSettings().setDirectionalLight(this);
         }
     }
 
