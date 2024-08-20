@@ -8,7 +8,7 @@ import java.util.Set;
 
 import io.github.kuggek.engine.core.Transform;
 import io.github.kuggek.engine.ecs.components.ComponentField;
-import io.github.kuggek.engine.subsystems.SubsystemSettings;
+import io.github.kuggek.engine.subsystems.EngineRuntimeSettings;
 
 /**
  * Represents an abstract component of a game object. Components are used to add functionality
@@ -19,6 +19,8 @@ public abstract class GameComponent {
     protected Transform transform;
 
     protected GameObject gameObject;
+
+    private boolean disabled = true;
 
     public GameComponent(GameObject gameObject) {
         this.transform = gameObject.getTransform();
@@ -50,19 +52,28 @@ public abstract class GameComponent {
      * Subclasses can override this method to perform any operations that need to be done
      * when the component is disposed of.
      */
-    protected void onDispose(SubsystemSettings settings) {
+    protected void onDispose(EngineRuntimeSettings settings) {
 
     }
 
-    protected void onAwake(SubsystemSettings settings) {
+    protected void onAwake(EngineRuntimeSettings settings) {
+
+    }
+    
+    protected void onEnable() {
 
     }
 
-    public static void awake(GameComponent component, SubsystemSettings settings) {
+    protected void onDisable() {
+
+    }
+
+
+    public static void awake(GameComponent component, EngineRuntimeSettings settings) {
         component.onAwake(settings);
     }
 
-    public static void dispose(GameComponent component, SubsystemSettings settings) {
+    public static void dispose(GameComponent component, EngineRuntimeSettings settings) {
         component.onDispose(settings);
     }
 
@@ -107,5 +118,24 @@ public abstract class GameComponent {
             }
         }
         return fieldValues;
+    }
+
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
+
+        if (disabled) {
+            onDisable();
+        } else {
+            onEnable();
+        }
+    }
+
+    public boolean isDisabled() {
+        // If the component is part of a game object, check if the game object is disabled
+        if (gameObject != null && gameObject.isDisabled()) {
+            return true;
+        }
+        
+        return disabled;
     }
 }

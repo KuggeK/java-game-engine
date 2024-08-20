@@ -11,6 +11,8 @@ import io.github.kuggek.engine.core.Transform;
 public class GameObject {
     private int ID;
 
+    private String name = "GameObject";
+
     private Map<Class<? extends GameComponent>, GameComponent> components;
     
     private Transform transform;
@@ -22,6 +24,8 @@ public class GameObject {
     private GameObject parent;
     private Set<GameObject> children;
 
+    private boolean disabled;
+
     public GameObject(int ID, GameObjectManager manager) {
         this.ID = ID;
         this.components = new HashMap<>();
@@ -29,6 +33,7 @@ public class GameObject {
         this.tags = new HashSet<>();
         this.children = new HashSet<>();
         this.manager = Optional.ofNullable(manager);
+        this.disabled = false;
     }
 
     public GameObject(int ID) {
@@ -106,8 +111,17 @@ public class GameObject {
     private <T extends GameComponent> void addComponent(T component) {
         component.gameObject = this;
         component.transform = transform;
+        component.setDisabled(disabled); 
         components.put(component.getClass(), component);
         manager.ifPresent(m -> m.createComponent(component));
+    }
+
+    public void addComponentOfType(Class<? extends GameComponent> type, boolean force) {
+        try {
+            addComponent(type.getDeclaredConstructor().newInstance(), force);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -225,5 +239,25 @@ public class GameObject {
             child.transform.setParent(null);
         }
         parent.children.clear();
+    }
+
+    public boolean isDisabled() {
+        return disabled;
+    }
+
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
+
+        for (GameComponent component : components.values()) {
+            component.setDisabled(disabled);
+        }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
