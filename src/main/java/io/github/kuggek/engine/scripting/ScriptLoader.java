@@ -5,16 +5,22 @@ import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.JarFile;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
+
+import io.github.kuggek.engine.core.PathUtils;
+import io.github.kuggek.engine.core.config.EngineProjectConfiguration;
 
 public class ScriptLoader {
 
     private static JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
     private static Instrumentation instrumentation;
     private static JarClassLoader jarClassLoader = new JarClassLoader(new URLClassLoader(new URL[0], ScriptLoader.class.getClassLoader()));
+    private static Set<String> loadedScriptsNames = new HashSet<>();
 
     public static void premain(String agentArgs, Instrumentation inst) {
         instrumentation = inst;
@@ -42,21 +48,41 @@ public class ScriptLoader {
     /**
      * Compile user script with the given name.
      */
-    public static boolean compileScript(String scriptName, String directoryPath) {
+    public static boolean compileScript(String scriptFileName, String directoryPath, String... dependencies) {
         String pathSep = System.getProperty("path.separator");
         String fileSep = System.getProperty("file.separator");
         directoryPath = directoryPath.replace("/", fileSep) + fileSep;
+
+        StringBuilder classpath = new StringBuilder();
+        for (String dependency : dependencies) {
+            classpath.append(dependency).append(pathSep);
+        }
+        classpath.deleteCharAt(classpath.length() - 1);
         
         int result = javac.run(System.in, System.out, System.err,
-            "-classpath", directoryPath + "engine-1.0.jar" + pathSep + directoryPath + "joml-1.10.5.jar", 
-            scriptName);
+            "-classpath", classpath.toString(), 
+            scriptFileName);
 
         if (result != 0) {
             System.out.println("Compilation failed.");
             return false;
         }
 
+        loadedScriptsNames.add(determineClassName(scriptFileName));
         return true;
+    }
+
+    // The root package of all scripts should be scripts. 
+    private static String determineClassName(String scriptFileName) {
+        scriptFileName = PathUtils.formatToSystemPath(scriptFileName);
+        scriptFileName = scriptFileName.split("scripts")[1];
+        if (System.getProperty("file.separator").equals("\\")) {
+            scriptFileName = scriptFileName.replace("\\", ".");
+        } else {
+            scriptFileName = scriptFileName.replace("/", ".");
+        }
+        scriptFileName = scriptFileName.endsWith(".java") ? scriptFileName.substring(0, scriptFileName.length() - 5) : scriptFileName;
+        return "scripts" + (!scriptFileName.startsWith(".") ? "." : "") + scriptFileName;
     }
 
     /**
@@ -69,11 +95,19 @@ public class ScriptLoader {
             return;
         }
 
+        String dependenciesPath = EngineProjectConfiguration.get().getPaths().getScriptsPath();
+        dependenciesPath = PathUtils.concatenateAndFormat(dependenciesPath, ".dependencies");
+
+        String[] dependencies = new String[] {
+            PathUtils.concatenateAndFormat(dependenciesPath, "engine-1.0.jar"),
+            PathUtils.concatenateAndFormat(dependenciesPath, "joml-1.10.5.jar") 
+        };
+
         File[] entries = directory.listFiles();
         for (File entry : entries) {
             if (entry.getName().endsWith(".java")) {
                 System.out.println("Java file: " + entry.getName());
-                compileScript(entry.getAbsolutePath(), directory.getAbsolutePath());
+                compileScript(entry.getAbsolutePath(), directory.getAbsolutePath(), dependencies);
             }
 
             if (entry.isDirectory()) {
@@ -100,13 +134,20 @@ public class ScriptLoader {
         try {
             if (instrumentation == null) {
                 jarClassLoader.addURL(new File(jarName).toURI().toURL());
+                System.out.println("Added jar to classpath.");
             } else {
                 instrumentation.appendToSystemClassLoaderSearch(new JarFile(jarName));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
 
+    public static Set<String> getLoadedScriptsNames() {
+        return Set.copyOf(loadedScriptsNames);
+    }
 
+    public static JarClassLoader getJarClassLoader() {
+        return jarClassLoader;
     }
 }
