@@ -14,6 +14,7 @@ import java.util.Map;
 
 import org.joml.Vector4f;
 
+import io.github.kuggek.engine.core.config.ProjectPaths;
 import io.github.kuggek.engine.rendering.objects.Material;
 import io.github.kuggek.engine.rendering.objects.Mesh;
 import io.github.kuggek.engine.rendering.objects.Texture;
@@ -27,7 +28,8 @@ public class SQLiteAssetManager implements AssetManager {
 
     private SQLiteAssetManager() {
         try {
-            conn = DriverManager.getConnection("jdbc:sqlite:assets.db");
+            String url = "jdbc:sqlite:" + ProjectPaths.DB_PATH;
+            conn = DriverManager.getConnection(url);
             initTables();
         } catch (SQLException e) {
             e.printStackTrace();

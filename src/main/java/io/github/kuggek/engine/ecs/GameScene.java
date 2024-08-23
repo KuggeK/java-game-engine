@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import io.github.kuggek.engine.core.config.EngineProjectConfiguration;
+import io.github.kuggek.engine.core.config.ProjectPaths;
 import io.github.kuggek.engine.core.json.GameSceneAdapters;
 import io.github.kuggek.engine.subsystems.GameSceneSettings;
 
@@ -112,8 +112,9 @@ public class GameScene implements GameSceneSettings {
         GsonBuilder builder = new GsonBuilder();
         GameSceneAdapters.registerAdapters(builder);
         Gson gson = builder.create();
-        String scenesLocation = EngineProjectConfiguration.get().getPaths().getScenesPath();
-        String jsonString = Files.readString(Paths.get(scenesLocation + sceneName + ".json"));
+
+        String path = ProjectPaths.concatenatePaths(ProjectPaths.SCENES_PATH, sceneName + ".json");
+        String jsonString = Files.readString(Paths.get(path));
         return gson.fromJson(jsonString, GameScene.class);
     }
 

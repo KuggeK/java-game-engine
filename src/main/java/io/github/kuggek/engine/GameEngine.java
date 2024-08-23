@@ -5,6 +5,7 @@ import java.io.IOException;
 import io.github.kuggek.engine.core.assets.DefaultAssets;
 import io.github.kuggek.engine.core.assets.SQLiteAssetManager;
 import io.github.kuggek.engine.core.config.EngineProjectConfiguration;
+import io.github.kuggek.engine.core.config.ProjectPaths;
 import io.github.kuggek.engine.ecs.GameScene;
 import io.github.kuggek.engine.rendering.Window;
 import io.github.kuggek.engine.rendering.objects.SkyBox;
@@ -23,7 +24,6 @@ public class GameEngine {
     private long previousTime;
     private long deltaTime;
     private long timeTaken;
-    private int targetFPS;
     private boolean running = false;
 
     private Thread gameLoopThread;
@@ -34,7 +34,8 @@ public class GameEngine {
         }
 
         EngineProjectConfiguration config = EngineProjectConfiguration.loadProjectConfiguration(args[0]);
-        ScriptLoader.compileAndPackageScripts("scripts.jar", config.getPaths().getScriptsPath());
+        System.out.println(config.getProjectAbsolutePath());
+        ScriptLoader.compileAndPackageScripts("scripts.jar", ProjectPaths.SCRIPTS_PATH);
         ScriptLoader.addJarToClasspath("scripts.jar");
 
         DefaultAssets.loadDefaultAssets(SQLiteAssetManager.getInstance());
@@ -74,8 +75,6 @@ public class GameEngine {
 
         projectConfig = config;
 
-        targetFPS = projectConfig.getTargetFPS();
-
         setupScene(scene);
     }
 
@@ -108,7 +107,7 @@ public class GameEngine {
                 window.getKeyInput().clear();
     
                 // Sleep to maintain target FPS
-                long sleepTime = (1000 / targetFPS) - (timeTaken / 1000000);
+                long sleepTime = (1000 / projectConfig.getTargetFPS()) - (timeTaken / 1000000);
                 if (sleepTime > 0) {
                     try {
                         Thread.sleep(sleepTime);

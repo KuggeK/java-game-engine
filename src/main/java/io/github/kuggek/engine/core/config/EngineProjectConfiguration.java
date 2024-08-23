@@ -1,5 +1,6 @@
 package io.github.kuggek.engine.core.config;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -12,6 +13,7 @@ import io.github.kuggek.engine.rendering.WindowSettings;
 
 public class EngineProjectConfiguration extends WindowSettings {
 
+    private transient String projectAbsolutePath;
     private String projectName;
     private String projectDescription;
     private String projectVersion;
@@ -20,20 +22,23 @@ public class EngineProjectConfiguration extends WindowSettings {
     private List<String> scenes;
     private String initialSceneName;
 
-    private ProjectPaths paths;
-
     private static EngineProjectConfiguration instance;
     
     public EngineProjectConfiguration(int width, int height, String title, boolean fullscreen, boolean resizable, int targetFPS) {
         super(width, height, title, fullscreen, resizable, targetFPS);
-        paths = new ProjectPaths();
     }
 
     public static EngineProjectConfiguration loadProjectConfiguration(String path) throws IOException, URISyntaxException {
-        String json = Files.readString(Paths.get(path));
+        File file = new File(path);
+        if (!file.isDirectory()) {
+            throw new IllegalArgumentException("Provided path is not a directory.");
+        }
+
+        String projectFilePath = ProjectPaths.concatenateAndFormat(path, "project.json");
+        String json = Files.readString(Paths.get(projectFilePath));
         Gson gson = new Gson();
         instance = gson.fromJson(json, EngineProjectConfiguration.class);
-        instance.paths = new ProjectPaths();
+        instance.projectAbsolutePath = file.getAbsolutePath();
         return instance;
     }
 
@@ -43,6 +48,10 @@ public class EngineProjectConfiguration extends WindowSettings {
 
     public static EngineProjectConfiguration get() {
         return instance;
+    }
+
+    public String getProjectAbsolutePath() {
+        return projectAbsolutePath;
     }
 
     public String getProjectName() {
@@ -91,9 +100,5 @@ public class EngineProjectConfiguration extends WindowSettings {
 
     public void setInitialSceneName(String initialSceneName) {
         this.initialSceneName = initialSceneName;
-    }
-
-    public ProjectPaths getPaths() {
-        return paths;
     }
 }

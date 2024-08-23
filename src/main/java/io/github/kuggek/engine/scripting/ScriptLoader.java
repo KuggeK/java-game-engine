@@ -12,8 +12,7 @@ import java.util.jar.JarFile;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 
-import io.github.kuggek.engine.core.PathUtils;
-import io.github.kuggek.engine.core.config.EngineProjectConfiguration;
+import io.github.kuggek.engine.core.config.ProjectPaths;
 
 public class ScriptLoader {
 
@@ -49,8 +48,8 @@ public class ScriptLoader {
      * Compile user script with the given name.
      */
     public static boolean compileScript(String scriptFileName, String directoryPath, String... dependencies) {
-        String pathSep = System.getProperty("path.separator");
-        String fileSep = System.getProperty("file.separator");
+        String pathSep = ProjectPaths.PATH_SEPARATOR;
+        String fileSep = ProjectPaths.FILE_SEPARATOR;
         directoryPath = directoryPath.replace("/", fileSep) + fileSep;
 
         StringBuilder classpath = new StringBuilder();
@@ -74,7 +73,7 @@ public class ScriptLoader {
 
     // The root package of all scripts should be scripts. 
     private static String determineClassName(String scriptFileName) {
-        scriptFileName = PathUtils.formatToSystemPath(scriptFileName);
+        scriptFileName = ProjectPaths.formatToSystemPath(scriptFileName);
         scriptFileName = scriptFileName.split("scripts")[1];
         if (System.getProperty("file.separator").equals("\\")) {
             scriptFileName = scriptFileName.replace("\\", ".");
@@ -95,12 +94,9 @@ public class ScriptLoader {
             return;
         }
 
-        String dependenciesPath = EngineProjectConfiguration.get().getPaths().getScriptsPath();
-        dependenciesPath = PathUtils.concatenateAndFormat(dependenciesPath, ".dependencies");
-
         String[] dependencies = new String[] {
-            PathUtils.concatenateAndFormat(dependenciesPath, "engine-1.0.jar"),
-            PathUtils.concatenateAndFormat(dependenciesPath, "joml-1.10.5.jar") 
+            ProjectPaths.concatenateAndFormat(ProjectPaths.SCRIPT_DEPENDENCIES_PATH, "engine-1.0.jar"),
+            ProjectPaths.concatenateAndFormat(ProjectPaths.SCRIPT_DEPENDENCIES_PATH, "joml-1.10.5.jar") 
         };
 
         File[] entries = directory.listFiles();
